@@ -4,7 +4,7 @@ import { useNavigation } from "../../context/navigation-context";
 import { AppStorage } from "../../lib/storage";
 import type { FocusSession } from "../../lib/data/mock-data";
 
-const formatStartTime = (timestamp: number) => {
+export const formatStartTime = (timestamp: number) => {
   return new Date(timestamp).toLocaleTimeString("en-US", {
     hour: "numeric",
     minute: "2-digit",
@@ -12,7 +12,7 @@ const formatStartTime = (timestamp: number) => {
   });
 };
 
-const formatDuration = (startedAt: number, endedAt: number) => {
+export const formatDuration = (startedAt: number, endedAt: number) => {
   const durationMs = endedAt - startedAt;
   const durationMinutes = Math.round(durationMs / (1000 * 60));
   const hours = Math.floor(durationMinutes / 60);
@@ -27,7 +27,7 @@ const formatDuration = (startedAt: number, endedAt: number) => {
   }
 };
 
-const formatTotalDuration = (totalMs: number) => {
+export const formatTotalDuration = (totalMs: number) => {
   const totalMinutes = Math.round(totalMs / (1000 * 60));
   const hours = Math.floor(totalMinutes / 60);
   const minutes = totalMinutes % 60;
@@ -41,7 +41,7 @@ const formatTotalDuration = (totalMs: number) => {
   }
 };
 
-const getLocalDateString = (timestamp: number) => {
+export const getLocalDateString = (timestamp: number) => {
   const d = new Date(timestamp);
   const year = d.getFullYear();
   const month = String(d.getMonth() + 1).padStart(2, "0");
@@ -49,7 +49,7 @@ const getLocalDateString = (timestamp: number) => {
   return `${year}-${month}-${day}`;
 };
 
-const getDayLabel = (timestamp: number) => {
+export const getDayLabel = (timestamp: number) => {
   const sessionDate = new Date(timestamp);
   const today = new Date();
   const yesterday = new Date();

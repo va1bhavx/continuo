@@ -8,6 +8,27 @@ declare const chrome: any;
 
 type FocusState = "idle" | "running" | "summary";
 
+export const formatTime = (totalSeconds: number) => {
+  const hrs = Math.floor(totalSeconds / 3600);
+  const mins = Math.floor((totalSeconds % 3600) / 60);
+  const secs = totalSeconds % 60;
+
+  return `${hrs.toString().padStart(2, "0")}:${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
+};
+
+export const formatDurationFriendly = (totalSeconds: number) => {
+  if (totalSeconds === 0) return "0s";
+  const hrs = Math.floor(totalSeconds / 3600);
+  const mins = Math.floor((totalSeconds % 3600) / 60);
+  const secs = totalSeconds % 60;
+
+  const parts = [];
+  if (hrs > 0) parts.push(`${hrs}h`);
+  if (mins > 0) parts.push(`${mins}m`);
+  if (secs > 0 || parts.length === 0) parts.push(`${secs}s`);
+  return parts.join(" ");
+};
+
 export default function AddTask() {
   const navigation = useNavigation();
 
@@ -149,26 +170,7 @@ export default function AddTask() {
     };
   }, [seconds, focusState, settings.tabTitleTimer]);
 
-  const formatTime = (totalSeconds: number) => {
-    const hrs = Math.floor(totalSeconds / 3600);
-    const mins = Math.floor((totalSeconds % 3600) / 60);
-    const secs = totalSeconds % 60;
 
-    return `${hrs.toString().padStart(2, "0")}:${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
-  };
-
-  const formatDurationFriendly = (totalSeconds: number) => {
-    if (totalSeconds === 0) return "0s";
-    const hrs = Math.floor(totalSeconds / 3600);
-    const mins = Math.floor((totalSeconds % 3600) / 60);
-    const secs = totalSeconds % 60;
-
-    const parts = [];
-    if (hrs > 0) parts.push(`${hrs}h`);
-    if (mins > 0) parts.push(`${mins}m`);
-    if (secs > 0 || parts.length === 0) parts.push(`${secs}s`);
-    return parts.join(" ");
-  };
 
   const handleStartFocus = async () => {
     const startedAt = Date.now();
