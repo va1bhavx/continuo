@@ -137,13 +137,13 @@ export default function History() {
   });
 
   return (
-    <div className="flex flex-col gap-8 px-4 py-8 animate-fade-in">
+    <div className="flex flex-col gap-8 px-4 py-8 animate-fade-in max-w-2xl mx-auto text-left">
       <button
         onClick={() => navigation.setView("main")}
         className="flex items-center gap-2 text-text-secondary hover:text-text-primary transition-colors w-fit text-sm font-medium cursor-pointer bg-transparent border-0 outline-none"
       >
         <ChevronLeft size={18} />
-        <span>Back to tab</span>
+        <span>Back to New Tab</span>
       </button>
 
       <section className="flex flex-col gap-6">
@@ -155,7 +155,7 @@ export default function History() {
         </div>
 
         {groups.length === 0 ? (
-          <div className="flex flex-col items-center justify-center p-12 border border-dashed border-border rounded-lg bg-surface/20 text-center gap-2 mt-4">
+          <div className="flex flex-col items-center justify-center p-8 border border-border rounded-lg bg-surface/70 backdrop-blur-md text-center gap-2 mt-2">
             <p className="text-sm font-medium text-text-primary">
               No focus sessions yet
             </p>
@@ -164,12 +164,12 @@ export default function History() {
             </p>
           </div>
         ) : (
-          <div className="flex flex-col gap-10 mt-2">
+          <div className="flex flex-col gap-8 mt-2">
             {groups.map((group) => (
-              <div key={group.key} className="flex flex-col gap-4">
+              <div key={group.key} className="flex flex-col gap-3">
                 {/* Group Header Row */}
-                <div className="flex justify-between items-baseline border-b border-border pb-2">
-                  <h2 className="font-semibold text-lg text-text-primary">
+                <div className="flex justify-between items-baseline border-b border-border/40 pb-2 px-1">
+                  <h2 className="font-semibold text-base text-text-primary">
                     {group.dateLabel}
                   </h2>
                   <span className="text-xs text-text-secondary font-medium tracking-wide">
@@ -178,14 +178,14 @@ export default function History() {
                   </span>
                 </div>
 
-                {/* Sessions List */}
-                <div className="flex flex-col gap-3">
+                {/* Sessions List Card */}
+                <div className="flex flex-col divide-y divide-border/40 rounded-lg bg-surface/70 backdrop-blur-md border border-border-strong/20 overflow-hidden">
                   {group.sessions.map((session) => (
                     <div
                       key={session.id}
-                      className="p-3.5 border-b border-border-strong flex items-center justify-between transition-colors hover:bg-surface-hover/20 "
+                      className="p-4 flex items-center justify-between gap-4 transition-colors hover:bg-surface-hover/20"
                     >
-                      <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-3 min-w-0 flex-1">
                         <div className="shrink-0">
                           {session.status === "completed" ? (
                             <CheckCheck className="text-accent" size={18} />
@@ -196,20 +196,20 @@ export default function History() {
                             />
                           )}
                         </div>
-                        <div className="flex flex-col gap-0.5 text-left">
-                          <h3 className="text-sm font-medium text-text-primary">
+                        <div className="flex flex-col gap-0.5 text-left min-w-0 flex-1">
+                          <h3 className="text-sm font-medium text-text-primary break-words">
                             {session.title}
                           </h3>
                           {/* Display optional accomplishment if present */}
                           {(session as any).accomplishment && (
-                            <p className="text-xs text-text-secondary italic">
+                            <p className="text-xs text-text-secondary italic break-words">
                               “{(session as any).accomplishment}”
                             </p>
                           )}
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-1.5 text-xs text-text-secondary">
+                      <div className="flex items-center gap-1.5 text-xs text-text-secondary shrink-0">
                         <span>{formatStartTime(session.startedAt)}</span>
                         <Dot className="text-text-tertiary" size={16} />
                         <span>

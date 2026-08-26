@@ -118,7 +118,7 @@ export default function Settings() {
         className="flex items-center gap-2 text-text-secondary hover:text-text-primary transition-colors w-fit text-sm font-medium cursor-pointer bg-transparent border-0 outline-none"
       >
         <ChevronLeft size={18} />
-        <span>Back to tab</span>
+        <span>Back to New Tab</span>
       </button>
 
       {/* Title */}
@@ -132,131 +132,139 @@ export default function Settings() {
           </p>
         </div>
 
-        {/* Wallpaper Section */}
-        <div className="flex flex-col gap-3 p-5 rounded-lg bg-surface/50 border border-border">
-          <h2 className="text-md font-semibold text-text-primary">
-            Background Wallpaper
-          </h2>
-          <p className="text-xs text-text-secondary -mt-1.5 font-normal">
-            Select a background image or use a solid background.
-          </p>
+        {/* Card 1: Appearance & Preferences */}
+        <div className="flex flex-col gap-6 p-5 rounded-lg bg-surface/70 backdrop-blur-md border border-border-strong/20">
+          {/* Wallpaper Section */}
+          <div className="flex flex-col gap-3">
+            <h2 className="text-md font-semibold text-text-primary">
+              Background Wallpaper
+            </h2>
+            <p className="text-xs text-text-secondary -mt-1 font-normal">
+              Select a background image or use a solid background.
+            </p>
 
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-2">
-            {WALLPAPERS.map((wall) => (
-              <button
-                key={wall.path}
-                onClick={() => handleWallpaperChange(wall.path)}
-                className={`relative w-full aspect-video rounded-md overflow-hidden border-2 transition-[border-color,transform] duration-150 cursor-pointer ${
-                  selectedWallpaper === wall.path
-                    ? "border-accent scale-[1.02] shadow-sm"
-                    : "border-border hover:border-border-strong"
-                }`}
-              >
-                {wall.path === "none" ? (
-                  <div className="w-full h-full bg-surface-2 flex items-center justify-center text-xs text-text-secondary font-medium">
-                    Solid Color
-                  </div>
-                ) : (
-                  <>
-                    <img
-                      src={wall.path}
-                      alt={wall.name}
-                      className="w-full h-full object-cover"
-                      loading="lazy"
-                      decoding="async"
-                    />
-                    <div className="absolute inset-0 bg-black/40 flex items-end p-1.5 opacity-0 hover:opacity-100 transition-opacity">
-                      <span className="text-[10px] text-white font-medium truncate">
-                        {wall.name}
-                      </span>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-1">
+              {WALLPAPERS.map((wall) => (
+                <button
+                  key={wall.path}
+                  onClick={() => handleWallpaperChange(wall.path)}
+                  className={`relative w-full aspect-video rounded-md overflow-hidden border-2 transition-[border-color,transform] duration-150 cursor-pointer ${
+                    selectedWallpaper === wall.path
+                      ? "border-accent scale-[1.02] shadow-sm"
+                      : "border-border hover:border-border-strong"
+                  }`}
+                >
+                  {wall.path === "none" ? (
+                    <div className="w-full h-full bg-surface-2 flex items-center justify-center text-xs text-text-secondary font-medium">
+                      Solid Color
                     </div>
-                  </>
-                )}
+                  ) : (
+                    <>
+                      <img
+                        src={wall.path}
+                        alt={wall.name}
+                        className="w-full h-full object-cover"
+                        loading="lazy"
+                        decoding="async"
+                      />
+                      <div className="absolute inset-0 bg-black/40 flex items-end p-1.5 opacity-0 hover:opacity-100 transition-opacity">
+                        <span className="text-[10px] text-white font-medium truncate">
+                          {wall.name}
+                        </span>
+                      </div>
+                    </>
+                  )}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="border-t border-border/40" />
+
+          {/* Customization Options Section */}
+          <div className="flex flex-col">
+            <h2 className="text-md font-semibold text-text-primary mb-2">
+              Preferences
+            </h2>
+
+            <ToggleSwitch
+              label="Show seconds in clock"
+              description="Toggle the visibility of seconds in the live clock."
+              checked={settings.clockShowSeconds}
+              onChange={(val) => updateSetting("clockShowSeconds", val)}
+            />
+            <ToggleSwitch
+              label="Use 24-Hour Format"
+              description="Display the time in 24-hour style instead of 12-hour AM/PM."
+              checked={settings.clock24Hour}
+              onChange={(val) => updateSetting("clock24Hour", val)}
+            />
+            <ToggleSwitch
+              label="Show timer in tab title"
+              description="Keep track of your active focus session ticking directly in the browser tab name."
+              checked={settings.tabTitleTimer}
+              onChange={(val) => updateSetting("tabTitleTimer", val)}
+            />
+            <ToggleSwitch
+              label="Play completed alert sound"
+              description="Hear a soft notification chime when your focus sessions complete or stop."
+              checked={settings.soundAlert}
+              onChange={(val) => updateSetting("soundAlert", val)}
+            />
+          </div>
+        </div>
+
+        {/* Card 2: About & Support */}
+        <div className="flex flex-col gap-6 p-5 rounded-lg bg-surface/70 backdrop-blur-md border border-border-strong/20">
+          <div className="flex items-center justify-between">
+            <div className="flex flex-col text-left">
+              <h2 className="text-md font-semibold text-text-primary">About Continuo</h2>
+              <p className="text-xs text-text-secondary mt-0.5 font-normal">Read about why Continuo was built and its core philosophy.</p>
+            </div>
+            <button
+              onClick={() => navigation.setView("about")}
+              className="h-9 px-4 rounded-md text-xs font-semibold bg-accent text-accent-text! hover:bg-accent-hover active:scale-[0.98] transition-all duration-150 cursor-pointer border-0"
+            >
+              Read Story
+            </button>
+          </div>
+
+          <div className="border-t border-border/40" />
+
+          <div className="flex flex-col">
+            <h2 className="text-md font-semibold text-text-primary mb-1">Support & Legal</h2>
+            <p className="text-xs text-text-secondary mb-3 font-normal">Contact the developer or read user policies.</p>
+
+            <div className="flex flex-col divide-y divide-border/40 text-sm">
+              <button
+                onClick={() => navigation.setView("feedback")}
+                className="flex items-center justify-between py-3.5 first:pt-0 text-text-primary hover:text-accent transition-colors bg-transparent border-0 cursor-pointer w-full text-left font-medium"
+              >
+                <span>Feedback & Support</span>
+                <span className="text-xs text-text-secondary font-medium">Get Help &rarr;</span>
               </button>
-            ))}
+              
+              <button
+                onClick={() => navigation.setView("privacy")}
+                className="flex items-center justify-between py-3.5 text-text-primary hover:text-accent transition-colors bg-transparent border-0 cursor-pointer w-full text-left font-medium"
+              >
+                <span>Privacy Policy</span>
+                <span className="text-xs text-text-secondary font-medium">Read &rarr;</span>
+              </button>
+              
+              <button
+                onClick={() => navigation.setView("terms")}
+                className="flex items-center justify-between py-3.5 last:pb-0 text-text-primary hover:text-accent transition-colors bg-transparent border-0 cursor-pointer w-full text-left font-medium"
+              >
+                <span>Terms of Use</span>
+                <span className="text-xs text-text-secondary font-medium">Read &rarr;</span>
+              </button>
+            </div>
           </div>
         </div>
 
-        {/* About Continuo Card */}
-        <div className="flex items-center justify-between p-5 rounded-lg bg-surface/50 border border-border">
-          <div className="flex flex-col text-left">
-            <h2 className="text-md font-semibold text-text-primary">About Continuo</h2>
-            <p className="text-xs text-text-secondary mt-0.5 font-normal">Read about why Continuo was built and its core philosophy.</p>
-          </div>
-          <button
-            onClick={() => navigation.setView("about")}
-            className="h-9 px-4 rounded-md text-xs font-semibold bg-accent text-accent-text! hover:bg-accent-hover active:scale-[0.98] transition-all duration-150 cursor-pointer border-0"
-          >
-            Read Story
-          </button>
-        </div>
-
-        {/* Customization Options */}
-        <div className="flex flex-col p-5 rounded-lg bg-surface/50 border border-border">
-          <h2 className="text-md font-semibold text-text-primary mb-3">
-            Customization Options
-          </h2>
-
-          <ToggleSwitch
-            label="Show seconds in clock"
-            description="Toggle the visibility of seconds in the live clock."
-            checked={settings.clockShowSeconds}
-            onChange={(val) => updateSetting("clockShowSeconds", val)}
-          />
-          <ToggleSwitch
-            label="Use 24-Hour Format"
-            description="Display the time in 24-hour style instead of 12-hour AM/PM."
-            checked={settings.clock24Hour}
-            onChange={(val) => updateSetting("clock24Hour", val)}
-          />
-          <ToggleSwitch
-            label="Show timer in tab title"
-            description="Keep track of your active focus session ticking directly in the browser tab name."
-            checked={settings.tabTitleTimer}
-            onChange={(val) => updateSetting("tabTitleTimer", val)}
-          />
-          <ToggleSwitch
-            label="Play completed alert sound"
-            description="Hear a soft notification chime when your focus sessions complete or stop."
-            checked={settings.soundAlert}
-            onChange={(val) => updateSetting("soundAlert", val)}
-          />
-        </div>
-
-        {/* Support & Legal Section */}
-        <div className="flex flex-col p-5 rounded-lg bg-surface/50 border border-border">
-          <h2 className="text-md font-semibold text-text-primary mb-1">Support & Legal</h2>
-          <p className="text-xs text-text-secondary mb-3 font-normal">Contact the developer or read user policies.</p>
-
-          <div className="flex flex-col divide-y divide-border/40 text-sm">
-            <button
-              onClick={() => navigation.setView("feedback")}
-              className="flex items-center justify-between py-3.5 first:pt-0 last:pb-0 text-text-primary hover:text-accent transition-colors bg-transparent border-0 cursor-pointer w-full text-left font-medium"
-            >
-              <span>Feedback & Support</span>
-              <span className="text-xs text-text-secondary font-medium">Get Help &rarr;</span>
-            </button>
-            
-            <button
-              onClick={() => navigation.setView("privacy")}
-              className="flex items-center justify-between py-3.5 last:pb-0 text-text-primary hover:text-accent transition-colors bg-transparent border-0 cursor-pointer w-full text-left font-medium"
-            >
-              <span>Privacy Policy</span>
-              <span className="text-xs text-text-secondary font-medium">Read &rarr;</span>
-            </button>
-            
-            <button
-              onClick={() => navigation.setView("terms")}
-              className="flex items-center justify-between py-3.5 last:pb-0 text-text-primary hover:text-accent transition-colors bg-transparent border-0 cursor-pointer w-full text-left font-medium"
-            >
-              <span>Terms of Use</span>
-              <span className="text-xs text-text-secondary font-medium">Read &rarr;</span>
-            </button>
-          </div>
-        </div>
-
-        {/* Danger Zone */}
-        <div className="flex flex-col p-5 rounded-lg bg-surface/50 border border-border border-danger/30">
+        {/* Card 3: Danger Zone */}
+        <div className="flex flex-col p-5 rounded-lg bg-surface/70 backdrop-blur-md border border-danger/30">
           <h2 className="text-md font-semibold text-danger mb-3">
             Danger Zone
           </h2>
@@ -287,7 +295,7 @@ export default function Settings() {
             </button>
           </div>
 
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 py-3">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 py-3 last:pb-0 border-0">
             <div className="flex flex-col text-left">
               <span className="text-sm font-medium text-text-primary">
                 Reset Preferences

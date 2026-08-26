@@ -11,14 +11,23 @@ export default function FeedbackSupport() {
 
   return (
     <div className="flex flex-col gap-8 px-4 py-8 max-w-2xl mx-auto animate-fade-in text-left">
-      {/* Back Button */}
-      <button
-        onClick={() => navigation.setView("settings")}
-        className="flex items-center gap-2 text-text-secondary hover:text-text-primary transition-colors w-fit text-sm font-medium cursor-pointer bg-transparent border-0 outline-none"
-      >
-        <ChevronLeft size={18} />
-        <span>Back to settings</span>
-      </button>
+      {/* Back Button / Navigation Breadcrumbs */}
+      <div className="flex items-center gap-4 text-sm text-text-secondary">
+        <button
+          onClick={() => navigation.setView("settings")}
+          className="flex items-center gap-1 hover:text-text-primary transition-colors cursor-pointer bg-transparent border-0 outline-none font-medium"
+        >
+          <ChevronLeft size={18} />
+          <span>Back to settings</span>
+        </button>
+        <span className="text-text-tertiary">/</span>
+        <button
+          onClick={() => navigation.setView("main")}
+          className="hover:text-text-primary transition-colors cursor-pointer bg-transparent border-0 outline-none font-medium"
+        >
+          Back to New Tab
+        </button>
+      </div>
 
       {/* Header */}
       <div>
@@ -36,7 +45,7 @@ export default function FeedbackSupport() {
 
         <div className="flex flex-col gap-4 mt-2">
           {/* Card: Report Bug */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 rounded-lg bg-surface/40 border border-border/60">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 rounded-lg bg-surface/70 backdrop-blur-md border border-border-strong/20">
             <div className="flex gap-3 text-left">
               <Bug size={20} className="text-accent shrink-0 mt-0.5" />
               <div className="flex flex-col">
@@ -55,7 +64,7 @@ export default function FeedbackSupport() {
           </div>
 
           {/* Card: Suggest Feature */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 rounded-lg bg-surface/40 border border-border/60">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 rounded-lg bg-surface/70 backdrop-blur-md border border-border-strong/20">
             <div className="flex gap-3 text-left">
               <Lightbulb size={20} className="text-accent shrink-0 mt-0.5" />
               <div className="flex flex-col">
@@ -74,7 +83,7 @@ export default function FeedbackSupport() {
           </div>
 
           {/* Card: Hello */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 rounded-lg bg-surface/40 border border-border/60">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 rounded-lg bg-surface/70 backdrop-blur-md border border-border-strong/20">
             <div className="flex gap-3 text-left">
               <MessageSquare size={20} className="text-accent shrink-0 mt-0.5" />
               <div className="flex flex-col">

@@ -264,7 +264,7 @@ export default function AddTask() {
             <p className="text-xs text-text-secondary">Current Focus</p>
           </div>
 
-          <h2 className="text-4xl font-medium tracking-[-0.02em] text-text-primary">
+          <h2 className="text-4xl font-medium tracking-[-0.02em] text-text-primary break-words max-w-lg">
             {task}
           </h2>
         </div>
@@ -312,12 +312,16 @@ export default function AddTask() {
                 ? "Focus Completed"
                 : "Focus Stopped"}
             </p>
-            <h2 className="text-4xl font-medium tracking-[-0.02em] text-text-primary">
+            <h2 className="text-4xl font-medium tracking-[-0.02em] text-text-primary break-words max-w-lg">
               {task}
             </h2>
             <p className="text-text-secondary text-sm font-medium">
               Took {formatDurationFriendly(seconds)}
             </p>
+            <div className="flex items-center gap-1.5 mt-1 text-text-secondary text-xs bg-surface-2/60 border border-border px-2.5 py-0.5 rounded-full backdrop-blur-xs">
+              <span className="w-1.5 h-1.5 rounded-full bg-check" />
+              <span>Session ended & saved to history</span>
+            </div>
           </div>
 
           <div className="flex flex-col gap-1.5 w-full max-w-md text-left mt-2 animate-fade-in">

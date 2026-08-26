@@ -6,14 +6,23 @@ export default function AboutContinuo() {
 
   return (
     <div className="flex flex-col gap-8 px-4 py-8 max-w-2xl mx-auto animate-fade-in text-left">
-      {/* Back Button */}
-      <button
-        onClick={() => navigation.setView("settings")}
-        className="flex items-center gap-2 text-text-secondary hover:text-text-primary transition-colors w-fit text-sm font-medium cursor-pointer bg-transparent border-0 outline-none"
-      >
-        <ChevronLeft size={18} />
-        <span>Back to settings</span>
-      </button>
+      {/* Back Button / Navigation Breadcrumbs */}
+      <div className="flex items-center gap-4 text-sm text-text-secondary">
+        <button
+          onClick={() => navigation.setView("settings")}
+          className="flex items-center gap-1 hover:text-text-primary transition-colors cursor-pointer bg-transparent border-0 outline-none font-medium"
+        >
+          <ChevronLeft size={18} />
+          <span>Back to settings</span>
+        </button>
+        <span className="text-text-tertiary">/</span>
+        <button
+          onClick={() => navigation.setView("main")}
+          className="hover:text-text-primary transition-colors cursor-pointer bg-transparent border-0 outline-none font-medium"
+        >
+          Back to New Tab
+        </button>
+      </div>
 
       {/* Header */}
       <div>
@@ -51,7 +60,7 @@ export default function AboutContinuo() {
         </section>
 
         {/* Note from creator */}
-        <section className="flex flex-col gap-3 p-5 rounded-lg bg-surface/40 border border-border/60">
+        <section className="flex flex-col gap-3 p-5 rounded-lg bg-surface/70 backdrop-blur-md border border-border-strong/20">
           <h2 className="text-md font-bold text-text-primary">A note from the creator</h2>
           <p>
             I didn't build Continuo to make you more productive every minute of the day.

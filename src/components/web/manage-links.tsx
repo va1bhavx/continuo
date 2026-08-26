@@ -167,7 +167,7 @@ export default function ManageLinks() {
         className="flex items-center gap-2 text-text-secondary hover:text-text-primary transition-colors w-fit text-sm font-medium cursor-pointer bg-transparent border-0 outline-none"
       >
         <ChevronLeft size={18} />
-        <span>Back to tab</span>
+        <span>Back to New Tab</span>
       </button>
 
       {/* Header */}
@@ -178,7 +178,7 @@ export default function ManageLinks() {
 
       <div className="grid grid-cols-1 md:grid-cols-1 gap-6">
         {/* Add Link Form */}
-        <form onSubmit={handleAddLink} className="flex flex-col gap-4 p-5 rounded-lg bg-surface/50 border border-border">
+        <form onSubmit={handleAddLink} className="flex flex-col gap-4 p-5 rounded-lg bg-surface/70 backdrop-blur-md border border-border-strong/20">
           <h2 className="text-sm font-semibold text-text-primary">Add New Shortcut</h2>
           
           <div className="flex flex-col sm:flex-row gap-3">
@@ -212,7 +212,7 @@ export default function ManageLinks() {
         </form>
 
         {/* Existing Links List */}
-        <div className="flex flex-col p-5 rounded-lg bg-surface/50 border border-border">
+        <div className="flex flex-col p-5 rounded-lg bg-surface/70 backdrop-blur-md border border-border-strong/20">
           <h2 className="text-sm font-semibold text-text-primary mb-4">Saved Shortcuts</h2>
 
           {links.length === 0 ? (
