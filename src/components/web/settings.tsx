@@ -35,9 +35,14 @@ export default function Settings() {
   const [selectedWallpaper, setSelectedWallpaper] = useState<string>("");
   const [loading, setLoading] = useState(true);
 
-  // Confirmation states
-  const [confirmClearHistory, setConfirmClearHistory] = useState(false);
-  const [confirmResetSettings, setConfirmResetSettings] = useState(false);
+  // Toast and Modal states
+  const [toast, setToast] = useState<string | null>(null);
+  const [modal, setModal] = useState<{
+    type: "clear_history" | "reset_preferences";
+    title: string;
+    message: string;
+    action: () => void;
+  } | null>(null);
 
   useEffect(() => {
     const loadData = async () => {
@@ -68,38 +73,47 @@ export default function Settings() {
     await AppStorage.saveWallpaper(path);
   };
 
-  const handleClearHistory = async () => {
-    if (!confirmClearHistory) {
-      setConfirmClearHistory(true);
-      setTimeout(() => setConfirmClearHistory(false), 3000);
-      return;
-    }
-    await AppStorage.clearHistory();
-    setConfirmClearHistory(false);
-    alert("History cleared successfully!");
+  const showToast = (message: string) => {
+    setToast(message);
+    setTimeout(() => setToast(null), 3000);
   };
 
-  const handleResetSettings = async () => {
-    if (!confirmResetSettings) {
-      setConfirmResetSettings(true);
-      setTimeout(() => setConfirmResetSettings(false), 3000);
-      return;
-    }
-    const defaults: AppSettings = {
-      clockShowSeconds: true,
-      clock24Hour: false,
-      tabTitleTimer: true,
-      soundAlert: true,
-    };
-    setSettings(defaults);
-    await AppStorage.saveSettings(defaults);
+  const triggerClearHistory = () => {
+    setModal({
+      type: "clear_history",
+      title: "Clear Session History",
+      message: "Are you sure you want to permanently delete all saved focus logs? This action cannot be undone.",
+      action: async () => {
+        await AppStorage.clearHistory();
+        setModal(null);
+        showToast("History cleared successfully");
+      }
+    });
+  };
 
-    const defaultWall = "/wall/severina-seidl-3zSazQQX4ik-unsplash.webp";
-    setSelectedWallpaper(defaultWall);
-    await AppStorage.saveWallpaper(defaultWall);
+  const triggerResetSettings = () => {
+    setModal({
+      type: "reset_preferences",
+      title: "Reset Preferences",
+      message: "Are you sure you want to restore all settings and backgrounds to their defaults?",
+      action: async () => {
+        const defaults: AppSettings = {
+          clockShowSeconds: true,
+          clock24Hour: false,
+          tabTitleTimer: true,
+          soundAlert: true,
+        };
+        setSettings(defaults);
+        await AppStorage.saveSettings(defaults);
 
-    setConfirmResetSettings(false);
-    alert("Settings reset to default!");
+        const defaultWall = "/wall/severina-seidl-3zSazQQX4ik-unsplash.webp";
+        setSelectedWallpaper(defaultWall);
+        await AppStorage.saveWallpaper(defaultWall);
+
+        setModal(null);
+        showToast("Settings reset to default");
+      }
+    });
   };
 
   if (loading) {
@@ -245,6 +259,14 @@ export default function Settings() {
               </button>
               
               <button
+                onClick={() => navigation.setView("changelog")}
+                className="flex items-center justify-between py-3.5 text-text-primary hover:text-accent transition-colors bg-transparent border-0 cursor-pointer w-full text-left font-medium"
+              >
+                <span>Changelog & Release Notes</span>
+                <span className="text-xs text-text-secondary font-medium">View Timeline &rarr;</span>
+              </button>
+
+              <button
                 onClick={() => navigation.setView("privacy")}
                 className="flex items-center justify-between py-3.5 text-text-primary hover:text-accent transition-colors bg-transparent border-0 cursor-pointer w-full text-left font-medium"
               >
@@ -279,19 +301,11 @@ export default function Settings() {
               </span>
             </div>
             <button
-              onClick={handleClearHistory}
-              className={`h-9 px-4 rounded-md text-xs font-semibold flex items-center gap-1.5 transition-all duration-150 cursor-pointer ${
-                confirmClearHistory
-                  ? "bg-danger text-white!"
-                  : "bg-surface-hover hover:bg-surface-2 text-danger border border-transparent"
-              }`}
+              onClick={triggerClearHistory}
+              className="h-9 px-4 rounded-md text-xs font-semibold flex items-center gap-1.5 transition-all duration-150 cursor-pointer bg-surface-hover hover:bg-surface-2 text-danger border border-transparent"
             >
               <Trash2 size={14} />
-              <span>
-                {confirmClearHistory
-                  ? "Are you sure? Click to confirm"
-                  : "Clear History"}
-              </span>
+              <span>Clear History</span>
             </button>
           </div>
 
@@ -305,23 +319,49 @@ export default function Settings() {
               </span>
             </div>
             <button
-              onClick={handleResetSettings}
-              className={`h-9 px-4 rounded-md text-xs font-semibold flex items-center gap-1.5 transition-all duration-150 cursor-pointer ${
-                confirmResetSettings
-                  ? "bg-danger text-white!"
-                  : "bg-surface-hover hover:bg-surface-2 text-text-primary border border-transparent"
-              }`}
+              onClick={triggerResetSettings}
+              className="h-9 px-4 rounded-md text-xs font-semibold flex items-center gap-1.5 transition-all duration-150 cursor-pointer bg-surface-hover hover:bg-surface-2 text-text-primary border border-transparent"
             >
               <RotateCcw size={14} />
-              <span>
-                {confirmResetSettings
-                  ? "Are you sure? Click to confirm"
-                  : "Reset All Settings"}
-              </span>
+              <span>Reset All Settings</span>
             </button>
           </div>
         </div>
       </section>
+
+      {/* Toast Notification */}
+      {toast && (
+        <div className="fixed bottom-6 right-6 z-50 bg-surface/90 backdrop-blur-md border border-border-strong/20 px-4 py-3 rounded-lg shadow-lg flex items-center gap-2.5 animate-fade-in text-xs font-semibold text-text-primary">
+          <span className="w-1.5 h-1.5 rounded-full bg-check animate-pulse" />
+          <span>{toast}</span>
+        </div>
+      )}
+
+      {/* Confirmation Modal */}
+      {modal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center animate-fade-in">
+          <div className="bg-surface border border-border-strong/30 rounded-lg p-6 max-w-sm w-full mx-4 shadow-xl flex flex-col gap-4">
+            <div className="flex flex-col gap-1.5 text-left">
+              <h3 className="text-md font-bold text-text-primary">{modal.title}</h3>
+              <p className="text-xs text-text-secondary leading-relaxed">{modal.message}</p>
+            </div>
+            <div className="flex items-center justify-end gap-2.5 mt-2">
+              <button
+                onClick={() => setModal(null)}
+                className="h-8 px-3.5 rounded-md text-xs font-semibold bg-surface-hover hover:bg-surface-2 text-text-primary transition-all duration-150 cursor-pointer border-0"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={modal.action}
+                className="h-8 px-3.5 rounded-md text-xs font-semibold bg-danger text-white hover:bg-danger/80 transition-all duration-150 cursor-pointer border-0"
+              >
+                Confirm
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

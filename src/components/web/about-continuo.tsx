@@ -40,7 +40,7 @@ export default function AboutContinuo() {
         </p>
 
         {/* Why I built it */}
-        <section className="flex flex-col gap-3">
+        <section className="flex flex-col gap-3 text-text-primary/95 leading-relaxed">
           <h2 className="text-md font-bold text-text-primary">Why I built Continuo</h2>
           <p>
             I often found myself opening a new tab with a clear intention, only to end up somewhere completely different a few minutes later.
@@ -110,7 +110,7 @@ export default function AboutContinuo() {
 
         {/* Footer info */}
         <div className="flex flex-col items-center gap-1.5 pt-4 text-xs text-text-tertiary">
-          <span className="font-semibold text-text-secondary">Continuo v0.1.0</span>
+          <span className="font-semibold text-text-secondary">Continuo v1.1.0</span>
           <span className="flex items-center gap-1">
             Built with care. <Heart size={10} className="text-accent fill-accent" />
           </span>

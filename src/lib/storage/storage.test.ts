@@ -34,10 +34,9 @@ describe("AppStorage", () => {
     });
   });
 
-  it("should return default quick links when empty", async () => {
+  it("should return empty quick links when empty", async () => {
     const links = await AppStorage.getLinks();
-    expect(links).toHaveLength(3);
-    expect(links[0].label).toBe("GitHub");
+    expect(links).toHaveLength(0);
   });
 
   it("should save and retrieve custom quick links", async () => {

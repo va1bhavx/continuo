@@ -8,6 +8,7 @@ import AboutContinuo from "./components/web/about-continuo";
 import PrivacyPolicy from "./components/web/privacy-policy";
 import TermsOfUse from "./components/web/terms-of-use";
 import FeedbackSupport from "./components/web/feedback-support";
+import Changelog from "./components/web/changelog";
 import LinksCard from "./components/web/links-card";
 import RightHeader from "./components/web/right-header";
 import { useNavigation } from "./context/navigation-context";
@@ -28,6 +29,11 @@ function App() {
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
+
+  // Scroll to top when navigation view changes
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [navigation.view]);
 
   // Fetch initial wallpaper settings
   useEffect(() => {
@@ -160,6 +166,12 @@ function App() {
       {navigation.view === "feedback" && (
         <main className="max-w-5xl w-full mx-auto px-4 py-6 animate-fade-in">
           <FeedbackSupport />
+        </main>
+      )}
+
+      {navigation.view === "changelog" && (
+        <main className="max-w-5xl w-full mx-auto px-4 py-6 animate-fade-in">
+          <Changelog />
         </main>
       )}
 

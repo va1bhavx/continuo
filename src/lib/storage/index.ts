@@ -83,11 +83,7 @@ export const AppStorage = {
   },
 
   async getLinks(): Promise<FavoriteLink[]> {
-    return StorageService.get<FavoriteLink[]>(KEYS.LINKS, [
-      { id: "1", label: "GitHub", url: "https://github.com" },
-      { id: "2", label: "LinkedIn", url: "https://linkedin.com" },
-      { id: "3", label: "Twitter", url: "https://twitter.com" },
-    ]);
+    return StorageService.get<FavoriteLink[]>(KEYS.LINKS, []);
   },
 
   async saveLinks(links: FavoriteLink[]): Promise<void> {

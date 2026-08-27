@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { ChevronLeft, Plus, Trash2, Globe, Pencil, Check, X } from "lucide-react";
+import { ChevronLeft, Plus, Trash2, Globe, Pencil, Check, X, ArrowUp, ArrowDown } from "lucide-react";
 import { useNavigation } from "../../context/navigation-context";
 import { AppStorage } from "../../lib/storage";
 import type { FavoriteLink } from "../../lib/storage";
@@ -151,6 +151,20 @@ export default function ManageLinks() {
     await AppStorage.saveLinks(updated);
   };
 
+  const handleMoveLink = async (index: number, direction: "up" | "down") => {
+    const updated = [...links];
+    const targetIndex = direction === "up" ? index - 1 : index + 1;
+    if (targetIndex < 0 || targetIndex >= links.length) return;
+
+    // Swap elements
+    const temp = updated[index];
+    updated[index] = updated[targetIndex];
+    updated[targetIndex] = temp;
+
+    setLinks(updated);
+    await AppStorage.saveLinks(updated);
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64 text-text-secondary text-sm font-medium">
@@ -222,7 +236,7 @@ export default function ManageLinks() {
             </div>
           ) : (
             <div className="flex flex-col divide-y divide-border/40">
-              {links.map((link) => {
+              {links.map((link, index) => {
                 const avatarColorClass = getAvatarColor(link.label);
                 const initials = getInitials(link.label);
                 
@@ -290,8 +304,26 @@ export default function ManageLinks() {
                         <div className="flex items-center gap-1 opacity-80 group-hover:opacity-100 transition-opacity">
                           <button
                             type="button"
+                            onClick={() => handleMoveLink(index, "up")}
+                            disabled={index === 0}
+                            className="p-1.5 rounded-md hover:bg-surface-hover hover:text-accent text-text-secondary transition-colors cursor-pointer bg-transparent border-0 disabled:opacity-20 disabled:cursor-not-allowed"
+                            title="Move up"
+                          >
+                            <ArrowUp size={13} />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleMoveLink(index, "down")}
+                            disabled={index === links.length - 1}
+                            className="p-1.5 rounded-md hover:bg-surface-hover hover:text-accent text-text-secondary transition-colors cursor-pointer bg-transparent border-0 disabled:opacity-20 disabled:cursor-not-allowed"
+                            title="Move down"
+                          >
+                            <ArrowDown size={13} />
+                          </button>
+                          <button
+                            type="button"
                             onClick={() => handleStartEdit(link)}
-                            className="p-2 rounded-md hover:bg-surface-hover hover:text-text-primary text-text-secondary transition-all cursor-pointer bg-transparent border-0"
+                            className="p-1.5 rounded-md hover:bg-surface-hover hover:text-text-primary text-text-secondary transition-all cursor-pointer bg-transparent border-0"
                             aria-label={`Edit ${link.label}`}
                             title="Edit shortcut"
                           >
@@ -300,7 +332,7 @@ export default function ManageLinks() {
                           <button
                             type="button"
                             onClick={() => handleDeleteLink(link.id)}
-                            className="p-2 rounded-md hover:bg-surface-hover hover:text-danger text-text-secondary transition-all cursor-pointer bg-transparent border-0"
+                            className="p-1.5 rounded-md hover:bg-surface-hover hover:text-danger text-text-secondary transition-all cursor-pointer bg-transparent border-0"
                             aria-label={`Delete ${link.label}`}
                             title="Delete shortcut"
                           >
