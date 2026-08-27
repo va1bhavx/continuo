@@ -295,7 +295,15 @@ export default function AddTask() {
 
       {/* Input or Summary view */}
       {focusState === "idle" && (
-        <div className="w-full">
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (task.trim()) {
+              handleStartFocus();
+            }
+          }}
+          className="w-full"
+        >
           <Input
             type="text"
             placeholder="Build something great"
@@ -303,7 +311,7 @@ export default function AddTask() {
             onChange={handleTaskChange}
             value={task}
           />
-        </div>
+        </form>
       )}
 
       {focusState === "summary" && (
