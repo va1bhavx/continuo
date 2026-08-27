@@ -257,10 +257,10 @@ export default function AddTask() {
   };
 
   return (
-    <section className="max-w-lg mx-auto w-full flex flex-col items-center gap-5 text-center">
+    <section className="max-w-lg mx-auto w-full flex flex-col items-center gap-5 text-center text-shadow-legible">
       {/* Intention state header */}
       {focusState === "running" && (
-        <div className="flex flex-col items-center gap-3">
+        <div className="flex flex-col items-center gap-3 animate-scale-in">
           <div className="flex items-center gap-2">
             <p className="w-2 h-2 bg-accent rounded-full animate-pulse" />
             <p className="text-xs text-text-secondary">Current Focus</p>
@@ -273,7 +273,7 @@ export default function AddTask() {
       )}
 
       {/* Timer / Question Area */}
-      <div className="space-y-1.5 mb-2">
+      <div className="space-y-1.5 mb-2 animate-scale-in">
         {focusState === "idle" && (
           <>
             <h2 className="text-4xl font-medium tracking-[-0.02em] text-text-primary">
@@ -302,7 +302,7 @@ export default function AddTask() {
               handleStartFocus();
             }
           }}
-          className="w-full"
+          className="w-full animate-slide-up-subtle"
         >
           <Input
             type="text"
@@ -315,7 +315,7 @@ export default function AddTask() {
       )}
 
       {focusState === "summary" && (
-        <div className="flex flex-col items-center gap-6 w-full">
+        <div className="flex flex-col items-center gap-6 w-full animate-scale-in">
           <div className="flex flex-col items-center gap-2">
             <p className="text-xs font-semibold uppercase tracking-wider text-accent">
               {sessionStatus === "completed"
@@ -407,41 +407,43 @@ export default function AddTask() {
       {/* Action Buttons */}
       <div className="mt-4">
         {focusState === "idle" && (
-          <button
-            type="button"
-            className="
-              h-11
-              rounded-md
-              bg-accent
-              px-5
-              text-sm
-              font-medium
-              text-accent-text!
-              shadow-[0_1px_2px_rgba(0,0,0,0.2)]
-              transition-all
-              duration-150
+          <div className="animate-slide-up-subtle">
+            <button
+              type="button"
+              className="
+                h-11
+                rounded-md
+                bg-accent
+                px-5
+                text-sm
+                font-medium
+                text-accent-text!
+                shadow-[0_1px_2px_rgba(0,0,0,0.2)]
+                transition-all
+                duration-150
 
-              hover:bg-accent-hover
-              active:scale-[0.98]
-              disabled:opacity-50
-              disabled:cursor-not-allowed
-              cursor-pointer
+                hover:bg-accent-hover
+                active:scale-[0.98]
+                disabled:opacity-50
+                disabled:cursor-not-allowed
+                cursor-pointer
 
-              focus-visible:outline-none
-              focus-visible:ring-2
-              focus-visible:ring-accent-soft-border
-              focus-visible:ring-offset-2
-              focus-visible:ring-offset-bg
-            "
-            onClick={handleStartFocus}
-            disabled={!task.trim()}
-          >
-            Start Focus
-          </button>
+                focus-visible:outline-none
+                focus-visible:ring-2
+                focus-visible:ring-accent-soft-border
+                focus-visible:ring-offset-2
+                focus-visible:ring-offset-bg
+              "
+              onClick={handleStartFocus}
+              disabled={!task.trim()}
+            >
+              Start Focus
+            </button>
+          </div>
         )}
 
         {focusState === "running" && (
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 animate-slide-up-subtle">
             <button
               type="button"
               className="
@@ -492,7 +494,7 @@ export default function AddTask() {
         )}
 
         {focusState === "summary" && (
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 animate-slide-up-subtle">
             <button
               type="button"
               className="

@@ -46,8 +46,8 @@ export default function LinksCard() {
   }, []);
 
   return (
-    <div className="w-full max-w-lg mx-auto border-t border-border/40 pt-4 mt-2">
-      <div className="flex items-center gap-4 flex-wrap">
+    <div className="w-full max-w-xl mx-auto border-t border-border/20 pt-6 mt-6 animate-fade-in">
+      <div className="flex items-center justify-center gap-6 flex-wrap">
         {links.map((link) => {
           const avatarColorClass = getAvatarColor(link.label);
           const initials = getInitials(link.label);
@@ -58,12 +58,12 @@ export default function LinksCard() {
               href={link.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="group flex items-center gap-2 text-xs font-semibold text-text-primary transition-colors hover:text-accent"
+              className="group flex flex-col items-center gap-2 w-16 text-center text-[10px] font-semibold text-text-secondary transition-colors hover:text-accent"
             >
-              <span className={`flex size-7 shrink-0 items-center justify-center rounded-full border text-[10px] font-bold transition-all duration-150 group-hover:scale-[1.05] ${avatarColorClass}`}>
+              <span className={`flex size-10 shrink-0 items-center justify-center rounded-full border text-xs font-bold transition-all duration-200 group-hover:scale-[1.1] group-hover:border-accent/40 group-hover:bg-surface-hover/80 shadow-md ${avatarColorClass}`}>
                 {initials}
               </span>
-              <span className="truncate max-w-[80px]">{link.label}</span>
+              <span className="truncate w-full">{link.label}</span>
             </a>
           );
         })}
@@ -72,9 +72,12 @@ export default function LinksCard() {
           type="button"
           aria-label="Add link"
           onClick={() => navigation.setView("links")}
-          className="ml-auto flex size-7 shrink-0 items-center justify-center rounded-full border border-border text-text-secondary transition-colors hover:border-accent hover:bg-surface-hover hover:text-text-primary cursor-pointer"
+          className="group flex flex-col items-center gap-2 w-16 text-center text-[10px] font-semibold text-text-secondary transition-colors hover:text-accent cursor-pointer"
         >
-          <Plus size={14} strokeWidth={2.5} />
+          <span className="flex size-10 shrink-0 items-center justify-center rounded-full border border-border border-dashed text-text-secondary transition-all duration-200 group-hover:scale-[1.1] group-hover:border-accent/40 group-hover:text-text-primary group-hover:bg-surface-hover/50 shadow-md">
+            <Plus size={16} strokeWidth={2.5} />
+          </span>
+          <span className="truncate w-full text-text-tertiary group-hover:text-text-secondary">Add Link</span>
         </button>
       </div>
     </div>

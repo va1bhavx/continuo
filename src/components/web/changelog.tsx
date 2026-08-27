@@ -16,28 +16,40 @@ const CHANGELOG_DATA: ChangelogVersion[] = [
   {
     version: "v1.1.0",
     date: "August 27, 2026",
-    badge: "Latest Update",
+    badge: "Latest Release",
     type: "minor",
     changes: [
       {
-        category: "Quick Links Reordering",
+        category: "Quick Links Dock & Drag-n-Drop",
         items: [
-          "Added Up/Down arrow button custom sorting controls in the Quick Links settings page.",
-          "Updated fresh installation defaults to show a clean slate with zero links initially, allowing users to build their own panel."
+          "Integrated @dnd-kit drag-and-drop reordering with a sleek vertical grip handle next to shortcuts.",
+          "Redesigned the dashboard bookmarks layout into a centered circular dock to prevent cluttering.",
+          "Configured new installations to start with an empty dashboard dock so users can add their own links."
+        ]
+      },
+      {
+        category: "Staggered Wallpaper Transitions",
+        items: [
+          "Designed a custom vertical 5-strip sweep wipe animation that runs in sequence when changing backgrounds."
+        ]
+      },
+      {
+        category: "Tactile Micro-Animations",
+        items: [
+          "Wired up Tailwind scale-in and slide-up animations to intention input forms, stopwatch clocks, and session summaries."
         ]
       },
       {
         category: "Visual Safety & Alerts",
         items: [
-          "Replaced inside-button danger text confirmations for 'Clear History' and 'Reset Preferences' with modal confirmation overlays.",
-          "Replaced standard browser alert dialogs with sleek bottom-right toast message popups."
+          "Added safety confirmation modal dialogs for 'Clear History' and 'Reset Preferences' settings actions.",
+          "Replaced native browser alerts with clean toast notifications in the bottom-right corner."
         ]
       },
       {
-        category: "UX Improvements",
+        category: "Contrast & Accessibility",
         items: [
-          "Implemented scroll-to-top logic so that changing views or opening a new tab always lands the user at the top of the viewport.",
-          "Enhanced font-contrast readability for paragraph descriptions in the 'About Continuo' section."
+          "Improved text visibility and contrast for version dates, about descriptions, and dashboard fonts across all wallpapers."
         ]
       }
     ]
@@ -140,7 +152,7 @@ export default function Changelog() {
             {/* Version Meta */}
             <div className="flex items-baseline gap-2.5 flex-wrap">
               <h2 className="text-lg font-bold text-text-primary tracking-tight">{item.version}</h2>
-              <span className="text-xs text-text-tertiary font-medium">{item.date}</span>
+              <span className="text-xs text-text-secondary font-medium">{item.date}</span>
               {item.badge && (
                 <span className="text-[10px] font-bold text-accent bg-accent/15 px-2 py-0.5 rounded-full border border-accent/20">
                   {item.badge}

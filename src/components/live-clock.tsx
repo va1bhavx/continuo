@@ -73,7 +73,7 @@ export default function LiveClock() {
   });
 
   return (
-    <div className="text-left">
+    <div className="text-left text-shadow-legible">
       <p className="text-3xl font-bold tracking-tight text-text-primary">{formattedTime}</p>
       <p className="text-xs text-text-secondary mt-0.5">{formattedDate}</p>
     </div>

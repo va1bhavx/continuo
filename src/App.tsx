@@ -20,6 +20,10 @@ function App() {
   const [wallpaper, setWallpaper] = useState<string>(
     "/wall/severina-seidl-3zSazQQX4ik-unsplash.webp",
   );
+  const [bgWallpaper, setBgWallpaper] = useState<string>(
+    "/wall/severina-seidl-3zSazQQX4ik-unsplash.webp",
+  );
+  const [transitioning, setTransitioning] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -40,6 +44,7 @@ function App() {
     const initWallpaper = async () => {
       const saved = await AppStorage.getWallpaper();
       setWallpaper(saved);
+      setBgWallpaper(saved);
     };
     initWallpaper();
   }, []);
@@ -72,43 +77,51 @@ function App() {
     }
   }, []);
 
-  // Apply wallpaper styling to document.body directly
+  // Trigger wallpaper stripping transition on change
   useEffect(() => {
-    const body = document.body;
-    if (wallpaper && wallpaper !== "none") {
-      const img = new Image();
-      img.src = wallpaper;
-      img
-        .decode()
-        .then(() => {
-          body.style.backgroundImage = `linear-gradient(rgba(8, 10, 12, 0.58), rgba(8, 10, 12, 0.58)), url("${wallpaper}")`;
-          body.style.backgroundSize = "cover";
-          body.style.backgroundPosition = "center";
-          body.style.backgroundAttachment = "fixed";
-          body.style.backgroundRepeat = "no-repeat";
-        })
-        .catch((err) => {
-          console.warn(
-            "Failed to decode background image asynchronously:",
-            err,
-          );
-          body.style.backgroundImage = `linear-gradient(rgba(8, 10, 12, 0.58), rgba(8, 10, 12, 0.58)), url("${wallpaper}")`;
-          body.style.backgroundSize = "cover";
-          body.style.backgroundPosition = "center";
-          body.style.backgroundAttachment = "fixed";
-          body.style.backgroundRepeat = "no-repeat";
-        });
-    } else {
-      body.style.backgroundImage = "";
-      body.style.backgroundSize = "";
-      body.style.backgroundPosition = "";
-      body.style.backgroundAttachment = "";
-      body.style.backgroundRepeat = "";
+    if (wallpaper !== bgWallpaper) {
+      setTransitioning(true);
+      const timer = setTimeout(() => {
+        setBgWallpaper(wallpaper);
+        setTransitioning(false);
+      }, 1050); // 1.05s covers all delays and transition durations
+      return () => clearTimeout(timer);
     }
-  }, [wallpaper]);
+  }, [wallpaper, bgWallpaper]);
 
   return (
-    <div className="min-h-screen flex flex-col w-full relative">
+    <div className="min-h-screen flex flex-col w-full relative isolate">
+      {/* Custom Wallpaper Transition Overlay System */}
+      <div className="fixed inset-0 -z-50 overflow-hidden pointer-events-none">
+        {/* Static base wallpaper */}
+        {bgWallpaper && bgWallpaper !== "none" && (
+          <div
+            className="absolute inset-0 bg-cover bg-center"
+            style={{
+              backgroundImage: `linear-gradient(rgba(8, 10, 12, 0.58), rgba(8, 10, 12, 0.58)), url("${bgWallpaper}")`,
+            }}
+          />
+        )}
+        
+        {/* Staggered Vertical Strips reveal overlay on change */}
+        {transitioning && wallpaper && wallpaper !== "none" && (
+          <div className="absolute inset-0 flex">
+            {[0, 1, 2, 3, 4].map((i) => (
+              <div
+                key={i}
+                className="h-full flex-1 bg-cover bg-center animate-strip-reveal"
+                style={{
+                  backgroundImage: `linear-gradient(rgba(8, 10, 12, 0.58), rgba(8, 10, 12, 0.58)), url("${wallpaper}")`,
+                  backgroundPosition: `${i * 25}% center`,
+                  backgroundSize: "500% 100%",
+                  animationDelay: `${i * 85}ms`,
+                  transform: "translateY(-100%)",
+                }}
+              />
+            ))}
+          </div>
+        )}
+      </div>
       <header
         className={`flex w-full items-center justify-between px-4 py-4 shrink-0 sticky top-0 transition-all duration-200 z-50 ${
           isScrolled ? "bg-surface/95  shadow-sm" : "bg-transparent"
@@ -175,7 +188,7 @@ function App() {
         </main>
       )}
 
-      <footer className="fixed bottom-4 right-4 z-40 text-[10px] text-text-secondary font-medium tracking-tight bg-surface/10 px-2 py-1 rounded backdrop-blur-xs">
+      <footer className="fixed bottom-4 right-4 z-40 text-[10px] text-text-secondary font-medium tracking-tight bg-surface/10 px-2 py-1 rounded backdrop-blur-xs text-shadow-legible">
         <span>Build by </span>
         <a
           href="https://kumarvaibhav.vercel.app"

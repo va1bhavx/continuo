@@ -1,8 +1,24 @@
 import { useEffect, useState } from "react";
-import { ChevronLeft, Plus, Trash2, Globe, Pencil, Check, X, ArrowUp, ArrowDown } from "lucide-react";
+import { ChevronLeft, Plus, Trash2, Globe, Pencil, Check, X, GripVertical } from "lucide-react";
 import { useNavigation } from "../../context/navigation-context";
 import { AppStorage } from "../../lib/storage";
 import type { FavoriteLink } from "../../lib/storage";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+  useSortable,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
 // Sleek, uniform professional style for link avatars
 export function getAvatarColor(_label: string) {
@@ -18,6 +34,155 @@ export function getInitials(label: string) {
     return (parts[0][0] + parts[1][0]).substring(0, 2).toUpperCase();
   }
   return clean.substring(0, 2).toUpperCase();
+}
+
+interface SortableLinkItemProps {
+  link: FavoriteLink;
+  index: number;
+  editingLinkId: string | null;
+  editLabel: string;
+  setEditLabel: (val: string) => void;
+  editUrl: string;
+  setEditUrl: (val: string) => void;
+  editError: string | null;
+  handleSaveEdit: (id: string) => void;
+  handleCancelEdit: () => void;
+  handleStartEdit: (link: FavoriteLink) => void;
+  handleDeleteLink: (id: string) => void;
+}
+
+function SortableLinkItem({
+  link,
+  editingLinkId,
+  editLabel,
+  setEditLabel,
+  editUrl,
+  setEditUrl,
+  editError,
+  handleSaveEdit,
+  handleCancelEdit,
+  handleStartEdit,
+  handleDeleteLink,
+}: SortableLinkItemProps) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: link.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.6 : 1,
+    zIndex: isDragging ? 50 : "auto",
+  };
+
+  const avatarColorClass = getAvatarColor(link.label);
+  const initials = getInitials(link.label);
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={`group flex items-center justify-between py-3.5 first:pt-0 last:pb-0 min-h-[58px] transition-colors duration-150 ${isDragging ? "bg-surface-hover/20" : ""}`}
+    >
+      {editingLinkId === link.id ? (
+        <div className="flex-1 flex flex-col gap-2">
+          <div className="flex flex-col sm:flex-row gap-2 items-center w-full">
+            <input
+              type="text"
+              value={editLabel}
+              onChange={(e) => setEditLabel(e.target.value)}
+              className="w-full sm:w-1/3 h-9 px-3 rounded-md bg-surface border border-border text-xs text-text-primary placeholder:text-text-tertiary focus:outline-none focus:border-accent"
+              placeholder="Label"
+            />
+            <input
+              type="text"
+              value={editUrl}
+              onChange={(e) => setEditUrl(e.target.value)}
+              className="w-full sm:flex-1 h-9 px-3 rounded-md bg-surface border border-border text-xs text-text-primary placeholder:text-text-tertiary focus:outline-none focus:border-accent"
+              placeholder="URL"
+            />
+            <div className="flex items-center gap-1 shrink-0">
+              <button
+                type="button"
+                onClick={() => handleSaveEdit(link.id)}
+                className="p-2 rounded-md hover:bg-accent/20 hover:text-accent text-green-400 transition-all cursor-pointer bg-transparent border-0"
+                title="Save changes"
+              >
+                <Check size={16} />
+              </button>
+              <button
+                type="button"
+                onClick={handleCancelEdit}
+                className="p-2 rounded-md hover:bg-surface-hover hover:text-text-primary text-text-secondary transition-all cursor-pointer bg-transparent border-0"
+                title="Cancel editing"
+              >
+                <X size={16} />
+              </button>
+            </div>
+          </div>
+          {editError && <span className="text-[10px] text-danger font-medium text-left">{editError}</span>}
+        </div>
+      ) : (
+        <>
+          <div className="flex items-center gap-3 min-w-0 flex-1">
+            {/* Drag Handle */}
+            <button
+              type="button"
+              {...attributes}
+              {...listeners}
+              className="p-1 text-text-tertiary hover:text-text-primary cursor-grab active:cursor-grabbing transition-colors bg-transparent border-0 touch-none"
+              title="Drag to reorder"
+            >
+              <GripVertical size={16} />
+            </button>
+
+            {/* Dynamic Avatar */}
+            <span className={`flex size-9 shrink-0 items-center justify-center rounded-full border text-xs font-semibold ${avatarColorClass}`}>
+              {initials}
+            </span>
+            
+            <div className="flex flex-col text-left min-w-0 flex-1">
+              <span className="text-sm font-medium text-text-primary truncate">{link.label}</span>
+              <a
+                href={link.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs text-text-secondary hover:text-accent transition-colors truncate max-w-full"
+              >
+                {link.url.replace(/^https?:\/\//i, "")}
+              </a>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-1 opacity-80 group-hover:opacity-100 transition-opacity shrink-0">
+            <button
+              type="button"
+              onClick={() => handleStartEdit(link)}
+              className="p-1.5 rounded-md hover:bg-surface-hover hover:text-text-primary text-text-secondary transition-all cursor-pointer bg-transparent border-0"
+              aria-label={`Edit ${link.label}`}
+              title="Edit shortcut"
+            >
+              <Pencil size={13} />
+            </button>
+            <button
+              type="button"
+              onClick={() => handleDeleteLink(link.id)}
+              className="p-1.5 rounded-md hover:bg-surface-hover hover:text-danger text-text-secondary transition-all cursor-pointer bg-transparent border-0"
+              aria-label={`Delete ${link.label}`}
+              title="Delete shortcut"
+            >
+              <Trash2 size={13} />
+            </button>
+          </div>
+        </>
+      )}
+    </div>
+  );
 }
 
 export default function ManageLinks() {
@@ -36,6 +201,17 @@ export default function ManageLinks() {
   const [editLabel, setEditLabel] = useState("");
   const [editUrl, setEditUrl] = useState("");
   const [editError, setEditError] = useState<string | null>(null);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 5, // Requires 5px of drag distance to activate, allowing click events on delete/edit buttons
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
 
   const handleStartEdit = (link: FavoriteLink) => {
     setEditingLinkId(link.id);
@@ -117,12 +293,10 @@ export default function ManageLinks() {
       return;
     }
 
-    // Auto-prepend https:// if protocol is missing
     if (!/^https?:\/\//i.test(cleanUrl)) {
       cleanUrl = `https://${cleanUrl}`;
     }
 
-    // Basic URL validation
     try {
       new URL(cleanUrl);
     } catch {
@@ -140,7 +314,6 @@ export default function ManageLinks() {
     setLinks(updated);
     await AppStorage.saveLinks(updated);
 
-    // Clear form
     setLabel("");
     setUrl("");
   };
@@ -151,16 +324,14 @@ export default function ManageLinks() {
     await AppStorage.saveLinks(updated);
   };
 
-  const handleMoveLink = async (index: number, direction: "up" | "down") => {
-    const updated = [...links];
-    const targetIndex = direction === "up" ? index - 1 : index + 1;
-    if (targetIndex < 0 || targetIndex >= links.length) return;
+  const handleDragEnd = async (event: any) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
 
-    // Swap elements
-    const temp = updated[index];
-    updated[index] = updated[targetIndex];
-    updated[targetIndex] = temp;
+    const oldIndex = links.findIndex((l) => l.id === active.id);
+    const newIndex = links.findIndex((l) => l.id === over.id);
 
+    const updated = arrayMove(links, oldIndex, newIndex);
     setLinks(updated);
     await AppStorage.saveLinks(updated);
   };
@@ -235,116 +406,36 @@ export default function ManageLinks() {
               <span>No quick links added yet.</span>
             </div>
           ) : (
-            <div className="flex flex-col divide-y divide-border/40">
-              {links.map((link, index) => {
-                const avatarColorClass = getAvatarColor(link.label);
-                const initials = getInitials(link.label);
-                
-                return (
-                  <div key={link.id} className="group flex items-center justify-between py-3.5 first:pt-0 last:pb-0 min-h-[58px]">
-                    {editingLinkId === link.id ? (
-                      <div className="flex-1 flex flex-col gap-2">
-                        <div className="flex flex-col sm:flex-row gap-2 items-center w-full">
-                          <input
-                            type="text"
-                            value={editLabel}
-                            onChange={(e) => setEditLabel(e.target.value)}
-                            className="w-full sm:w-1/3 h-9 px-3 rounded-md bg-surface border border-border text-xs text-text-primary placeholder:text-text-tertiary focus:outline-none focus:border-accent"
-                            placeholder="Label"
-                          />
-                          <input
-                            type="text"
-                            value={editUrl}
-                            onChange={(e) => setEditUrl(e.target.value)}
-                            className="w-full sm:flex-1 h-9 px-3 rounded-md bg-surface border border-border text-xs text-text-primary placeholder:text-text-tertiary focus:outline-none focus:border-accent"
-                            placeholder="URL"
-                          />
-                          <div className="flex items-center gap-1 shrink-0">
-                            <button
-                              type="button"
-                              onClick={() => handleSaveEdit(link.id)}
-                              className="p-2 rounded-md hover:bg-accent/20 hover:text-accent text-green-400 transition-all cursor-pointer bg-transparent border-0"
-                              title="Save changes"
-                            >
-                              <Check size={16} />
-                            </button>
-                            <button
-                              type="button"
-                              onClick={handleCancelEdit}
-                              className="p-2 rounded-md hover:bg-surface-hover hover:text-text-primary text-text-secondary transition-all cursor-pointer bg-transparent border-0"
-                              title="Cancel editing"
-                            >
-                              <X size={16} />
-                            </button>
-                          </div>
-                        </div>
-                        {editError && <span className="text-[10px] text-danger font-medium text-left">{editError}</span>}
-                      </div>
-                    ) : (
-                      <>
-                        <div className="flex items-center gap-3">
-                          {/* Dynamic Avatar */}
-                          <span className={`flex size-9 shrink-0 items-center justify-center rounded-full border text-xs font-semibold ${avatarColorClass}`}>
-                            {initials}
-                          </span>
-                          
-                          <div className="flex flex-col text-left">
-                            <span className="text-sm font-medium text-text-primary">{link.label}</span>
-                            <a
-                              href={link.url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-xs text-text-secondary hover:text-accent transition-colors truncate max-w-[200px] sm:max-w-md"
-                            >
-                              {link.url.replace(/^https?:\/\//i, "")}
-                            </a>
-                          </div>
-                        </div>
-
-                        <div className="flex items-center gap-1 opacity-80 group-hover:opacity-100 transition-opacity">
-                          <button
-                            type="button"
-                            onClick={() => handleMoveLink(index, "up")}
-                            disabled={index === 0}
-                            className="p-1.5 rounded-md hover:bg-surface-hover hover:text-accent text-text-secondary transition-colors cursor-pointer bg-transparent border-0 disabled:opacity-20 disabled:cursor-not-allowed"
-                            title="Move up"
-                          >
-                            <ArrowUp size={13} />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleMoveLink(index, "down")}
-                            disabled={index === links.length - 1}
-                            className="p-1.5 rounded-md hover:bg-surface-hover hover:text-accent text-text-secondary transition-colors cursor-pointer bg-transparent border-0 disabled:opacity-20 disabled:cursor-not-allowed"
-                            title="Move down"
-                          >
-                            <ArrowDown size={13} />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleStartEdit(link)}
-                            className="p-1.5 rounded-md hover:bg-surface-hover hover:text-text-primary text-text-secondary transition-all cursor-pointer bg-transparent border-0"
-                            aria-label={`Edit ${link.label}`}
-                            title="Edit shortcut"
-                          >
-                            <Pencil size={13} />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleDeleteLink(link.id)}
-                            className="p-1.5 rounded-md hover:bg-surface-hover hover:text-danger text-text-secondary transition-all cursor-pointer bg-transparent border-0"
-                            aria-label={`Delete ${link.label}`}
-                            title="Delete shortcut"
-                          >
-                            <Trash2 size={13} />
-                          </button>
-                        </div>
-                      </>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragEnd={handleDragEnd}
+            >
+              <SortableContext
+                items={links.map((l) => l.id)}
+                strategy={verticalListSortingStrategy}
+              >
+                <div className="flex flex-col divide-y divide-border/40">
+                  {links.map((link, index) => (
+                    <SortableLinkItem
+                      key={link.id}
+                      link={link}
+                      index={index}
+                      editingLinkId={editingLinkId}
+                      editLabel={editLabel}
+                      setEditLabel={setEditLabel}
+                      editUrl={editUrl}
+                      setEditUrl={setEditUrl}
+                      editError={editError}
+                      handleSaveEdit={handleSaveEdit}
+                      handleCancelEdit={handleCancelEdit}
+                      handleStartEdit={handleStartEdit}
+                      handleDeleteLink={handleDeleteLink}
+                    />
+                  ))}
+                </div>
+              </SortableContext>
+            </DndContext>
           )}
         </div>
       </div>

@@ -13,7 +13,7 @@ No feeds, no notifications, no competitive streaks, and no distractions. Just a 
 *   **Intention Focus**: Set your current task and start working. The timer syncs with the browser tab title so you can track progress at a glance.
 *   **Stopwatch Timer**: Active focus stopwatch (`HH:MM:SS`) to keep you accountable. Supports starting directly via the **Enter** key.
 *   **Accomplishment Log**: Log what you accomplished upon completing or stopping a focus session.
-*   **Reorderable Quick Links**: Clean list of shortcuts on your dashboard with customizable reordering arrows in the settings.
+*   **Reorderable Quick Links**: Clean list of shortcuts on your dashboard with fluid drag-and-drop sorting controls in the settings.
 *   **History Panel**: Daily-grouped cards summarizing focus logs, task outcomes, start times, durations, and accomplishment notes.
 *   **Settings & Customization**:
     *   Cycle between high-quality background wallpapers or a solid dark theme.
