@@ -14,9 +14,38 @@ interface ChangelogVersion {
 
 const CHANGELOG_DATA: ChangelogVersion[] = [
   {
-    version: "v1.2.0",
+    version: "v1.2.1",
     date: "August 31, 2026",
     badge: "Latest Release",
+    type: "patch",
+    changes: [
+      {
+        category: "Timetable Schedule Reminders",
+        items: [
+          "Added support for Daily recurring reminders vs. One-time schedule blocks in the timetable drawer.",
+          "Added visual frequency badges (DAILY / ONCE) next to scheduled slots in the timeline.",
+          "Configured one-time reminders to automatically clean up from the list when a new day begins."
+        ]
+      },
+      {
+        category: "Accomplishment Notes Logger",
+        items: [
+          "Updated the reflection form to log multiple accomplishment notes sequentially for a single focus session without overwriting.",
+          "Added a dynamic checklist dashboard to the summary view showing logged accomplishments in real-time.",
+          "Implemented state recovery to restore typed/saved accomplishments if you switch views or reload mid-summary."
+        ]
+      },
+      {
+        category: "Gamified Achievements Sync",
+        items: [
+          "Implemented a silent retroactive achievements check on startup, automatically unlocking completed milestones from existing history data without spamming toasts."
+        ]
+      }
+    ]
+  },
+  {
+    version: "v1.2.0",
+    date: "August 31, 2026",
     type: "minor",
     changes: [
       {
