@@ -12,6 +12,7 @@ export interface FocusSession {
 
   createdAt: number;
   accomplishment?: string;
+  accomplishments?: string[];
 }
 
 export const HISTORY_DATA: FocusSession[] = [

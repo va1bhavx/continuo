@@ -39,6 +39,7 @@ export interface ScheduleSlot {
   title: string;
   description: string;
   notified?: boolean;
+  type?: "daily" | "once";
 }
 
 const KEYS = {
@@ -60,9 +61,20 @@ export const AppStorage = {
     await StorageService.set(KEYS.HISTORY, [session, ...history]);
   },
 
-  async updateSessionAccomplishment(id: string, accomplishment: string): Promise<void> {
+  async updateSessionAccomplishment(id: string, note: string): Promise<void> {
     const history = await this.getHistory();
-    const updated = history.map(s => s.id === id ? { ...s, accomplishment } : s);
+    const updated = history.map(s => {
+      if (s.id === id) {
+        const existing = s.accomplishments || (s.accomplishment ? [s.accomplishment] : []);
+        const newAccomplishments = [...existing, note];
+        return {
+          ...s,
+          accomplishment: newAccomplishments.join("\n"),
+          accomplishments: newAccomplishments
+        };
+      }
+      return s;
+    });
     await StorageService.set(KEYS.HISTORY, updated);
   },
 

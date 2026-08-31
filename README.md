@@ -15,7 +15,7 @@ No feeds, no notifications, no competitive streaks, and no distractions. Just a 
 *   **Accomplishment Log**: Log what you accomplished upon completing or stopping a focus session to build a history of achievements.
 *   **Focus Statistics Dashboard**: Track your productivity with key metrics (Total Focus Time, Success Rate, Average Duration) and beautiful visualizations including a 7-day SVG bar trend chart and a circular completion ring.
 *   **Gamified Achievements System**: Unlock 50 unique achievements across focus milestones, customizations, quick links, and filtering. Includes custom arpeggio audio chimes and reactive toast notifications.
-*   **Focus Tasks & Daily Schedule**: Slide-out drawers for a Tasks (To-Do) checklist (linkable to history sessions) and a Time Table planner with browser desktop reminders for scheduled blocks.
+*   **Focus Tasks & Daily Schedule**: Slide-out drawers for a Tasks (To-Do) checklist (linkable to history sessions) and a Time Table planner with browser desktop reminders supporting Daily recurring and One-time schedule blocks.
 *   **Daily Focus Streaks**: Maintain daily streaks by completing focus sessions of 3+ minutes, highlighted by a glowing header flame indicator.
 *   **Reorderable Quick Links Dock**: Centered dashboard shortcuts dock with fluid drag-and-drop reordering powered by `@dnd-kit`.
 *   **History Panel with Search & Filter**: Search logs by keywords and filter by session Status, Timeframe (Today, Yesterday, 7 Days, 30 Days), or Duration categories.

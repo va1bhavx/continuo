@@ -143,7 +143,9 @@ export default function History() {
         const query = searchQuery.toLowerCase();
         const matchesTitle = session.title.toLowerCase().includes(query);
         const matchesAccomplishment =
-          session.accomplishment?.toLowerCase().includes(query) || false;
+          session.accomplishment?.toLowerCase().includes(query) ||
+          session.accomplishments?.some(note => note.toLowerCase().includes(query)) ||
+          false;
         if (!matchesTitle && !matchesAccomplishment) return false;
       }
 
@@ -387,12 +389,20 @@ export default function History() {
                               <h3 className="text-sm font-medium text-text-primary break-words">
                                 {session.title}
                               </h3>
-                              {/* Display optional accomplishment if present */}
-                              {(session as any).accomplishment && (
+                              {/* Display optional accomplishment notes if present */}
+                              {session.accomplishments && session.accomplishments.length > 0 ? (
+                                <div className="flex flex-col gap-0.5 mt-0.5">
+                                  {session.accomplishments.map((note, idx) => (
+                                    <p key={idx} className="text-xs text-text-secondary italic break-words">
+                                      “{note}”
+                                    </p>
+                                  ))}
+                                </div>
+                              ) : (session as any).accomplishment ? (
                                 <p className="text-xs text-text-secondary italic break-words">
                                   “{(session as any).accomplishment}”
                                 </p>
-                              )}
+                              ) : null}
                             </div>
                           </div>
 

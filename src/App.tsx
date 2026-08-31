@@ -14,7 +14,7 @@ import RightHeader from "./components/web/right-header";
 import Statistics from "./components/web/statistics";
 import { useNavigation } from "./context/navigation-context";
 import { AppStorage } from "./lib/storage";
-import { checkCustomizationAchievements } from "./lib/storage/achievements-helper";
+import { syncAllAchievements } from "./lib/storage/achievements-helper";
 import TodoDrawer from "./components/web/todo-drawer";
 import ScheduleDrawer from "./components/web/schedule-drawer";
 import { ListTodo, CalendarClock } from "lucide-react";
@@ -38,13 +38,18 @@ function App() {
     try {
       const saved = await AppStorage.getSchedule();
       const todayStr = new Date().toLocaleDateString("en-US");
-      const lastDate = await StorageService.get<string>("last_notified_date", "");
+      const lastDate = await StorageService.get<string>(
+        "last_notified_date",
+        "",
+      );
 
       if (lastDate !== todayStr) {
-        // Reset notified status for a new day
-        const resetSlots = saved.map(slot => ({ ...slot, notified: false }));
-        setScheduleSlots(resetSlots);
-        await AppStorage.saveSchedule(resetSlots);
+        // Filter out completed one-time slots, and reset notified status for daily ones
+        const updatedSlots = saved
+          .filter((slot) => !(slot.type === "once" && slot.notified))
+          .map((slot) => ({ ...slot, notified: false }));
+        setScheduleSlots(updatedSlots);
+        await AppStorage.saveSchedule(updatedSlots);
         await StorageService.set("last_notified_date", todayStr);
       } else {
         setScheduleSlots(saved);
@@ -85,9 +90,9 @@ function App() {
       setWallpaper(saved);
       setBgWallpaper(saved);
       loadSchedule();
-      // Wait a brief moment to check customization achievements on load
+      // Wait a brief moment to silently sync all achievements based on existing data on load
       setTimeout(async () => {
-        await checkCustomizationAchievements();
+        await syncAllAchievements(true);
       }, 1000);
     };
     initWallpaper();
@@ -141,18 +146,26 @@ function App() {
         const slot = updatedSlots[i];
         if (slot.time === currentTimeStr && !slot.notified) {
           // Trigger notification (prioritize Chrome Extension Notifications API if available)
-          if (typeof chrome !== "undefined" && chrome.notifications && chrome.notifications.create) {
+          if (
+            typeof chrome !== "undefined" &&
+            chrome.notifications &&
+            chrome.notifications.create
+          ) {
             try {
               chrome.notifications.create(`schedule_${slot.id}_${Date.now()}`, {
                 type: "basic",
                 iconUrl: "continuo.png",
                 title: `⏰ Time Table: ${slot.title}`,
-                message: slot.description || "It's time for your scheduled block!",
+                message:
+                  slot.description || "It's time for your scheduled block!",
               });
             } catch (e) {
               console.warn("Chrome notification trigger failed:", e);
             }
-          } else if (typeof Notification !== "undefined" && Notification.permission === "granted") {
+          } else if (
+            typeof Notification !== "undefined" &&
+            Notification.permission === "granted"
+          ) {
             try {
               new Notification(`⏰ Time Table: ${slot.title}`, {
                 body: slot.description || "It's time for your scheduled block!",
@@ -256,7 +269,7 @@ function App() {
             }}
           />
         )}
-        
+
         {/* Staggered Vertical Strips reveal overlay on change */}
         {transitioning && wallpaper && wallpaper !== "none" && (
           <div className="absolute inset-0 flex">
@@ -369,7 +382,7 @@ function App() {
             title="Focus Tasks"
           >
             <ListTodo size={12} />
-            <span>Tasks</span>
+            <span>Todo</span>
           </button>
           <span className="h-3 w-px bg-border/30" />
           <button
@@ -385,43 +398,71 @@ function App() {
 
       {/* Drawers */}
       <TodoDrawer isOpen={todoOpen} onClose={() => setTodoOpen(false)} />
-      <ScheduleDrawer isOpen={scheduleOpen} onClose={() => setScheduleOpen(false)} />
+      <ScheduleDrawer
+        isOpen={scheduleOpen}
+        onClose={() => setScheduleOpen(false)}
+      />
 
       {/* Global Toast Notification System */}
-      {activeToast && activeToast.type === "achievement" && activeToast.achievement && (
-        <div className="fixed bottom-6 right-6 z-[9999] max-w-sm w-full bg-surface/90 backdrop-blur-md border border-accent/40 rounded-xl shadow-[0_4px_24px_rgba(0,0,0,0.3)] p-4 flex gap-3.5 animate-slide-up-subtle text-shadow-none text-left">
-          <div className="flex items-center justify-center w-12 h-12 rounded-lg bg-accent/10 border border-accent/20 text-3xl animate-bounce">
-            {activeToast.achievement.icon}
+      {activeToast &&
+        activeToast.type === "achievement" &&
+        activeToast.achievement && (
+          <div className="fixed bottom-6 right-6 z-[9999] max-w-sm w-full bg-surface/90 backdrop-blur-md border border-accent/40 rounded-xl shadow-[0_4px_24px_rgba(0,0,0,0.3)] p-4 flex gap-3.5 animate-slide-up-subtle text-shadow-none text-left">
+            <div className="flex items-center justify-center w-12 h-12 rounded-lg bg-accent/10 border border-accent/20 text-3xl animate-bounce">
+              {activeToast.achievement.icon}
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-[10px] uppercase tracking-wider font-semibold text-accent mb-0.5">
+                Achievement Unlocked!
+              </p>
+              <h4 className="text-sm font-bold text-text-primary mb-0.5 truncate">
+                {activeToast.achievement.title}
+              </h4>
+              <p className="text-xs text-text-secondary leading-normal">
+                {activeToast.achievement.description}
+              </p>
+            </div>
+            <button
+              onClick={() => setActiveToast(null)}
+              className="text-text-secondary hover:text-text-primary self-start transition-colors cursor-pointer"
+            >
+              <span className="sr-only">Close</span>
+              <svg
+                className="h-4 w-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              </svg>
+            </button>
           </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-[10px] uppercase tracking-wider font-semibold text-accent mb-0.5">
-              Achievement Unlocked!
-            </p>
-            <h4 className="text-sm font-bold text-text-primary mb-0.5 truncate">
-              {activeToast.achievement.title}
-            </h4>
-            <p className="text-xs text-text-secondary leading-normal">
-              {activeToast.achievement.description}
-            </p>
-          </div>
-          <button
-            onClick={() => setActiveToast(null)}
-            className="text-text-secondary hover:text-text-primary self-start transition-colors cursor-pointer"
-          >
-            <span className="sr-only">Close</span>
-            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
-      )}
+        )}
 
       {activeToast && activeToast.type !== "achievement" && (
         <div className="fixed bottom-6 right-6 z-[9999] max-w-sm bg-surface/90 backdrop-blur-md border border-border rounded-lg shadow-lg px-4 py-3 text-sm text-text-primary flex items-center justify-between gap-3 animate-slide-up-subtle text-shadow-none text-left">
           <span>{activeToast.message}</span>
-          <button onClick={() => setActiveToast(null)} className="text-text-secondary hover:text-text-primary cursor-pointer">
-            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          <button
+            onClick={() => setActiveToast(null)}
+            className="text-text-secondary hover:text-text-primary cursor-pointer"
+          >
+            <svg
+              className="h-4 w-4"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M6 18L18 6M6 6l12 12"
+              />
             </svg>
           </button>
         </div>

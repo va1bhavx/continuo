@@ -39,6 +39,7 @@ export default function AddTask() {
   const [startedAt, setStartedAt] = useState<number>(0);
   const [task, setTask] = useState<string>("");
   const [accomplishment, setAccomplishment] = useState<string>("");
+  const [sessionAccomplishments, setSessionAccomplishments] = useState<string[]>([]);
   const [isNoteSaved, setIsNoteSaved] = useState(false);
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
   const [sessionStatus, setSessionStatus] = useState<"completed" | "stopped">("completed");
@@ -91,7 +92,20 @@ export default function AddTask() {
             const elapsed = activeAccumulated + Math.floor((Date.now() - active.startedAt) / 1000);
             setSeconds(elapsed);
             if (active.sessionStatus) setSessionStatus(active.sessionStatus);
-            if (active.currentSessionId) setCurrentSessionId(active.currentSessionId);
+            if (active.currentSessionId) {
+              setCurrentSessionId(active.currentSessionId);
+              // Retrieve accomplishments from history
+              try {
+                const history = await AppStorage.getHistory();
+                const currentSession = history.find(s => s.id === active.currentSessionId);
+                if (currentSession) {
+                  const list = currentSession.accomplishments || (currentSession.accomplishment ? [currentSession.accomplishment] : []);
+                  setSessionAccomplishments(list);
+                }
+              } catch (err) {
+                console.error("Failed to load accomplishments from history on mount:", err);
+              }
+            }
           }
         }
       } catch (e) {
@@ -304,10 +318,21 @@ export default function AddTask() {
   };
 
   const handleSaveNote = async () => {
-    if (!accomplishment.trim() || !currentSessionId) return;
+    const cleanNote = accomplishment.trim();
+    if (!cleanNote || !currentSessionId) return;
 
-    await AppStorage.updateSessionAccomplishment(currentSessionId, accomplishment);
+    await AppStorage.updateSessionAccomplishment(currentSessionId, cleanNote);
+    
+    // Add to the local display list
+    setSessionAccomplishments(prev => [...prev, cleanNote]);
+    setAccomplishment("");
     setIsNoteSaved(true);
+    
+    // Reset saved status after a brief delay so the user can type and save more notes
+    setTimeout(() => {
+      setIsNoteSaved(false);
+    }, 1500);
+
     await checkHistoryAchievements();
   };
 
@@ -315,6 +340,7 @@ export default function AddTask() {
     setSeconds(0);
     setTask("");
     setAccomplishment("");
+    setSessionAccomplishments([]);
     setIsNoteSaved(false);
     setCurrentSessionId(null);
     setFocusState("idle");
@@ -406,6 +432,22 @@ export default function AddTask() {
             <label className="text-[13px] font-medium tracking-[-0.01em] text-text-secondary">
               What you accomplished (optional)
             </label>
+
+            {/* Display list of accomplishments saved so far */}
+            {sessionAccomplishments.length > 0 && (
+              <div className="flex flex-col gap-1.5 mb-2.5 p-3 rounded-lg bg-surface/50 border border-border/40 max-h-[160px] overflow-y-auto">
+                <p className="text-[9px] uppercase font-bold tracking-wider text-text-tertiary">Logged Accomplishments:</p>
+                <div className="flex flex-col gap-1">
+                  {sessionAccomplishments.map((note, idx) => (
+                    <div key={idx} className="text-xs text-text-primary leading-relaxed flex items-start gap-1.5">
+                      <span className="text-accent mt-1 shrink-0 select-none">•</span>
+                      <span className="italic">“{note}”</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <div className="relative flex flex-col items-end w-full gap-2">
               <textarea
                 placeholder="Briefly describe what you got done..."

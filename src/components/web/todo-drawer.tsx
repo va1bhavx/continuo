@@ -24,7 +24,7 @@ export default function TodoDrawer({ isOpen, onClose }: TodoDrawerProps) {
       try {
         const [savedTodos, savedHistory] = await Promise.all([
           AppStorage.getTodos(),
-          AppStorage.getHistory()
+          AppStorage.getHistory(),
         ]);
         setTodos(savedTodos);
         setHistory(savedHistory);
@@ -49,7 +49,7 @@ export default function TodoDrawer({ isOpen, onClose }: TodoDrawerProps) {
       description: description.trim(),
       completed: false,
       linkedSessionId: linkedSessionId || undefined,
-      createdAt: Date.now()
+      createdAt: Date.now(),
     };
 
     const updated = [newItem, ...todos];
@@ -63,7 +63,7 @@ export default function TodoDrawer({ isOpen, onClose }: TodoDrawerProps) {
 
   const handleToggleTodo = async (id: string) => {
     const updated = todos.map((t) =>
-      t.id === id ? { ...t, completed: !t.completed } : t
+      t.id === id ? { ...t, completed: !t.completed } : t,
     );
     setTodos(updated);
     await AppStorage.saveTodos(updated);
@@ -83,7 +83,7 @@ export default function TodoDrawer({ isOpen, onClose }: TodoDrawerProps) {
   return (
     <div className="fixed inset-0 z-50 flex justify-start pointer-events-none">
       {/* Click-away backdrop */}
-      <div 
+      <div
         className="absolute inset-0 bg-black/10 backdrop-blur-xs pointer-events-auto"
         onClick={onClose}
       />
@@ -93,8 +93,10 @@ export default function TodoDrawer({ isOpen, onClose }: TodoDrawerProps) {
         {/* Header */}
         <div className="p-4 border-b border-border/60 flex items-center justify-between">
           <div>
-            <h2 className="text-sm font-bold text-text-primary">Focus Tasks</h2>
-            <p className="text-[10px] text-text-secondary">Organize your goals & connect them to focus logs</p>
+            <h2 className="text-sm font-bold text-text-primary">Todo List</h2>
+            <p className="text-[10px] text-text-secondary">
+              Organize your goals & connect them to focus logs
+            </p>
           </div>
           <button
             onClick={onClose}
@@ -107,7 +109,7 @@ export default function TodoDrawer({ isOpen, onClose }: TodoDrawerProps) {
         {/* Scrollable Body */}
         <div className="flex-1 overflow-y-auto p-4 space-y-5">
           {/* Add Todo Form */}
-          <form onSubmit={handleAddTodo} className="space-y-2.5 p-3 rounded-lg bg-surface-hover/20 border border-border/40">
+          <form onSubmit={handleAddTodo} className="space-y-2.5">
             <input
               type="text"
               value={title}
@@ -126,7 +128,9 @@ export default function TodoDrawer({ isOpen, onClose }: TodoDrawerProps) {
 
             {/* Session selector */}
             <div className="space-y-1">
-              <label className="text-[9px] uppercase tracking-wider font-semibold text-text-secondary">Link to Focus Session</label>
+              <label className="text-[9px] uppercase tracking-wider font-semibold text-text-secondary">
+                Link to Focus Session
+              </label>
               <select
                 value={linkedSessionId}
                 onChange={(e) => setLinkedSessionId(e.target.value)}
@@ -135,7 +139,12 @@ export default function TodoDrawer({ isOpen, onClose }: TodoDrawerProps) {
                 <option value="">Independent Task</option>
                 {history.map((session) => (
                   <option key={session.id} value={session.id}>
-                    {session.title} ({new Date(session.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })})
+                    {session.title} (
+                    {new Date(session.createdAt).toLocaleDateString("en-US", {
+                      month: "short",
+                      day: "numeric",
+                    })}
+                    )
                   </option>
                 ))}
               </select>
@@ -151,23 +160,34 @@ export default function TodoDrawer({ isOpen, onClose }: TodoDrawerProps) {
 
           {/* Task List */}
           {loading ? (
-            <div className="text-center text-xs text-text-secondary py-8">Loading tasks...</div>
+            <div className="text-center text-xs text-text-secondary py-8">
+              Loading tasks...
+            </div>
           ) : todos.length === 0 ? (
             <div className="text-center text-xs text-text-secondary py-12 space-y-1 bg-surface-hover/10 rounded-lg p-4 border border-dashed border-border/40">
               <p className="font-semibold text-text-primary">No tasks found</p>
-              <p className="text-[10px]">Create checklist items to track your focus intentions.</p>
+              <p className="text-[10px]">
+                Create checklist items to track your focus intentions.
+              </p>
             </div>
           ) : (
             <div className="space-y-4">
               {/* Uncompleted Tasks */}
               {activeTodos.length > 0 && (
                 <div className="space-y-2">
-                  <h3 className="text-[10px] uppercase tracking-wider font-bold text-accent">Active ({activeTodos.length})</h3>
+                  <h3 className="text-[10px] uppercase tracking-wider font-bold text-accent">
+                    Active ({activeTodos.length})
+                  </h3>
                   <div className="space-y-2">
                     {activeTodos.map((todo) => {
-                      const linkedSession = history.find(s => s.id === todo.linkedSessionId);
+                      const linkedSession = history.find(
+                        (s) => s.id === todo.linkedSessionId,
+                      );
                       return (
-                        <div key={todo.id} className="p-3 rounded-lg bg-surface/50 border border-border/40 hover:border-border-strong/40 transition-all flex items-start gap-2.5">
+                        <div
+                          key={todo.id}
+                          className="p-3 rounded-lg bg-surface/50 border border-border/40 hover:border-border-strong/40 transition-all flex items-start gap-2.5"
+                        >
                           <button
                             onClick={() => handleToggleTodo(todo.id)}
                             className="text-text-secondary hover:text-accent transition-colors self-start mt-0.5 border-0 bg-transparent cursor-pointer p-0"
@@ -175,14 +195,20 @@ export default function TodoDrawer({ isOpen, onClose }: TodoDrawerProps) {
                             <Circle size={15} />
                           </button>
                           <div className="flex-1 min-w-0">
-                            <h4 className="text-xs font-bold text-text-primary leading-snug break-words">{todo.title}</h4>
+                            <h4 className="text-xs font-bold text-text-primary leading-snug break-words">
+                              {todo.title}
+                            </h4>
                             {todo.description && (
-                              <p className="text-[10px] text-text-secondary mt-0.5 leading-normal break-words">{todo.description}</p>
+                              <p className="text-[10px] text-text-secondary mt-0.5 leading-normal break-words">
+                                {todo.description}
+                              </p>
                             )}
                             {linkedSession && (
                               <div className="mt-1.5 inline-flex items-center gap-1 text-[9px] font-semibold text-accent bg-accent/10 px-2 py-0.5 rounded border border-accent/20">
                                 <Link size={8} />
-                                <span className="truncate max-w-[150px]">{linkedSession.title}</span>
+                                <span className="truncate max-w-[150px]">
+                                  {linkedSession.title}
+                                </span>
                               </div>
                             )}
                           </div>
@@ -202,27 +228,43 @@ export default function TodoDrawer({ isOpen, onClose }: TodoDrawerProps) {
               {/* Completed Tasks */}
               {completedTodos.length > 0 && (
                 <div className="space-y-2">
-                  <h3 className="text-[10px] uppercase tracking-wider font-bold text-text-secondary">Completed ({completedTodos.length})</h3>
+                  <h3 className="text-[10px] uppercase tracking-wider font-bold text-text-secondary">
+                    Completed ({completedTodos.length})
+                  </h3>
                   <div className="space-y-2 opacity-60">
                     {completedTodos.map((todo) => {
-                      const linkedSession = history.find(s => s.id === todo.linkedSessionId);
+                      const linkedSession = history.find(
+                        (s) => s.id === todo.linkedSessionId,
+                      );
                       return (
-                        <div key={todo.id} className="p-3 rounded-lg bg-surface/30 border border-border/30 flex items-start gap-2.5">
+                        <div
+                          key={todo.id}
+                          className="p-3 rounded-lg bg-surface/30 border border-border/30 flex items-start gap-2.5"
+                        >
                           <button
                             onClick={() => handleToggleTodo(todo.id)}
                             className="text-accent hover:text-text-secondary transition-colors self-start mt-0.5 border-0 bg-transparent cursor-pointer p-0"
                           >
-                            <CheckCircle2 size={15} className="fill-accent/10" />
+                            <CheckCircle2
+                              size={15}
+                              className="fill-accent/10"
+                            />
                           </button>
                           <div className="flex-1 min-w-0">
-                            <h4 className="text-xs font-medium text-text-secondary line-through leading-snug break-words">{todo.title}</h4>
+                            <h4 className="text-xs font-medium text-text-secondary line-through leading-snug break-words">
+                              {todo.title}
+                            </h4>
                             {todo.description && (
-                              <p className="text-[10px] text-text-tertiary mt-0.5 leading-normal line-through break-words">{todo.description}</p>
+                              <p className="text-[10px] text-text-tertiary mt-0.5 leading-normal line-through break-words">
+                                {todo.description}
+                              </p>
                             )}
                             {linkedSession && (
                               <div className="mt-1.5 inline-flex items-center gap-1 text-[9px] font-medium text-text-secondary bg-surface-hover/40 px-2 py-0.5 rounded border border-border/30">
                                 <Link size={8} />
-                                <span className="truncate max-w-[150px]">{linkedSession.title}</span>
+                                <span className="truncate max-w-[150px]">
+                                  {linkedSession.title}
+                                </span>
                               </div>
                             )}
                           </div>

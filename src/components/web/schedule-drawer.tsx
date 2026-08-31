@@ -19,13 +19,18 @@ const format12Hour = (time24: string) => {
   return `${displayHrs.toString().padStart(2, "0")}:${minsStr} ${ampm}`;
 };
 
-export default function ScheduleDrawer({ isOpen, onClose }: ScheduleDrawerProps) {
+export default function ScheduleDrawer({
+  isOpen,
+  onClose,
+}: ScheduleDrawerProps) {
   const [schedule, setSchedule] = useState<ScheduleSlot[]>([]);
   const [time, setTime] = useState("");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
+  const [type, setType] = useState<"daily" | "once">("daily");
   const [loading, setLoading] = useState(true);
-  const [notifPermission, setNotifPermission] = useState<NotificationPermission>("default");
+  const [notifPermission, setNotifPermission] =
+    useState<NotificationPermission>("default");
 
   useEffect(() => {
     if (!isOpen) return;
@@ -41,7 +46,8 @@ export default function ScheduleDrawer({ isOpen, onClose }: ScheduleDrawerProps)
           setNotifPermission(perm);
           if (perm === "denied") {
             triggerToast({
-              message: "Notifications declined. Enable them to receive real-time schedule alerts, task transition reminders, and daily checklist updates!"
+              message:
+                "Notifications declined. Enable them to receive real-time schedule alerts, task transition reminders, and daily checklist updates!",
             });
           }
         });
@@ -72,17 +78,21 @@ export default function ScheduleDrawer({ isOpen, onClose }: ScheduleDrawerProps)
       time: time,
       title: cleanTitle,
       description: description.trim(),
-      notified: false
+      notified: false,
+      type: type,
     };
 
     // Add and sort slots chronologically
-    const updated = [...schedule, newSlot].sort((a, b) => a.time.localeCompare(b.time));
+    const updated = [...schedule, newSlot].sort((a, b) =>
+      a.time.localeCompare(b.time),
+    );
     setSchedule(updated);
     await AppStorage.saveSchedule(updated);
 
     setTitle("");
     setTime("");
     setDescription("");
+    setType("daily");
 
     // Dispatch custom event to notify App.tsx that schedule updated
     window.dispatchEvent(new CustomEvent("schedule-update"));
@@ -100,7 +110,7 @@ export default function ScheduleDrawer({ isOpen, onClose }: ScheduleDrawerProps)
   return (
     <div className="fixed inset-0 z-50 flex justify-start pointer-events-none">
       {/* Click-away backdrop */}
-      <div 
+      <div
         className="absolute inset-0 bg-black/10 backdrop-blur-xs pointer-events-auto"
         onClick={onClose}
       />
@@ -110,8 +120,12 @@ export default function ScheduleDrawer({ isOpen, onClose }: ScheduleDrawerProps)
         {/* Header */}
         <div className="p-4 border-b border-border/60 flex items-center justify-between">
           <div>
-            <h2 className="text-sm font-bold text-text-primary">Daily Schedule</h2>
-            <p className="text-[10px] text-text-secondary">Plan your slots & receive desktop notifications</p>
+            <h2 className="text-sm font-bold text-text-primary">
+              Daily Schedule
+            </h2>
+            <p className="text-[10px] text-text-secondary">
+              Plan your slots & receive desktop notifications
+            </p>
           </div>
           <button
             onClick={onClose}
@@ -127,12 +141,15 @@ export default function ScheduleDrawer({ isOpen, onClose }: ScheduleDrawerProps)
           {notifPermission === "denied" && (
             <div className="p-2.5 rounded bg-danger/10 border border-danger/20 text-[10px] text-danger flex items-start gap-2 leading-normal">
               <Bell size={14} className="shrink-0 mt-0.5" />
-              <span>Notifications are blocked. Enable them in your browser settings to receive timetable reminders.</span>
+              <span>
+                Notifications are blocked. Enable them in your browser settings
+                to receive timetable reminders.
+              </span>
             </div>
           )}
 
           {/* Add Time Slot Form */}
-          <form onSubmit={handleAddSlot} className="space-y-2.5 p-3 rounded-lg bg-surface-hover/20 border border-border/40">
+          <form onSubmit={handleAddSlot} className="space-y-2.5 ">
             <div className="grid grid-cols-3 gap-2">
               <input
                 type="time"
@@ -141,21 +158,29 @@ export default function ScheduleDrawer({ isOpen, onClose }: ScheduleDrawerProps)
                 required
                 className="col-span-1 h-8 px-2 rounded bg-surface border border-border text-xs text-text-primary focus:outline-none focus:border-accent"
               />
-              <input
-                type="text"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder="Topic..."
-                required
-                className="col-span-2 h-8 px-2.5 rounded bg-surface border border-border text-xs text-text-primary focus:outline-none focus:border-accent"
-              />
+              <select
+                value={type}
+                onChange={(e) => setType(e.target.value as "daily" | "once")}
+                className="col-span-2 h-8 px-2 rounded bg-surface border border-border text-xs text-text-primary focus:outline-none focus:border-accent"
+              >
+                <option value="daily">Daily Reminder</option>
+                <option value="once">One-time Reminder</option>
+              </select>
             </div>
+            <input
+              type="text"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Topic..."
+              required
+              className="w-full h-8 px-2.5 rounded bg-surface border border-border text-xs text-text-primary focus:outline-none focus:border-accent"
+            />
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Topic description (optional)..."
               rows={2}
-              className="w-full p-2 rounded bg-surface border border-border text-xs text-text-primary focus:outline-none focus:border-accent resize-none"
+              className="w-full p-2 rounded bg-surface border border-border text-xs text-text-primary focus:outline-none focus:border-accent "
             />
             <button
               type="submit"
@@ -167,27 +192,45 @@ export default function ScheduleDrawer({ isOpen, onClose }: ScheduleDrawerProps)
 
           {/* Timeline Schedule */}
           {loading ? (
-            <div className="text-center text-xs text-text-secondary py-8">Loading schedule...</div>
+            <div className="text-center text-xs text-text-secondary py-8">
+              Loading schedule...
+            </div>
           ) : schedule.length === 0 ? (
             <div className="text-center text-xs text-text-secondary py-12 space-y-1 bg-surface-hover/10 rounded-lg p-4 border border-dashed border-border/40">
-              <p className="font-semibold text-text-primary">No slots added today</p>
-              <p className="text-[10px]">Divide your day into focus chunks to optimize tasks.</p>
+              <p className="font-semibold text-text-primary">
+                No slots added today
+              </p>
+              <p className="text-[10px]">
+                Divide your day into focus chunks to optimize tasks.
+              </p>
             </div>
           ) : (
             <div className="relative pl-4 border-l border-dashed border-border/60 ml-2.5 space-y-5">
               {schedule.map((slot) => (
-                <div key={slot.id} className="relative group/slot flex items-start justify-between gap-3 text-shadow-none">
+                <div
+                  key={slot.id}
+                  className="relative group/slot flex items-start justify-between gap-3 text-shadow-none"
+                >
                   {/* Timeline bullet dot */}
                   <span className="absolute -left-[20px] top-[14px] w-2 h-2 rounded-full bg-accent ring-4 ring-bg border border-accent-soft-border shrink-0" />
 
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-1.5 text-accent">
+                    <div className="flex items-center gap-1.5 text-accent flex-wrap">
                       <Clock size={11} />
-                      <span className="text-[10px] font-bold tracking-tight">{format12Hour(slot.time)}</span>
+                      <span className="text-[10px] font-bold tracking-tight">
+                        {format12Hour(slot.time)}
+                      </span>
+                      <span className="text-[8px] uppercase px-1 py-0.5 rounded bg-accent/10 border border-accent/25 font-bold tracking-wider text-accent shrink-0 select-none">
+                        {slot.type === "once" ? "Once" : "Daily"}
+                      </span>
                     </div>
-                    <h4 className="text-xs font-bold text-text-primary mt-1 break-words">{slot.title}</h4>
+                    <h4 className="text-xs font-bold text-text-primary mt-1 break-words">
+                      {slot.title}
+                    </h4>
                     {slot.description && (
-                      <p className="text-[10px] text-text-secondary mt-0.5 leading-normal break-words">{slot.description}</p>
+                      <p className="text-[10px] text-text-secondary mt-0.5 leading-normal break-words">
+                        {slot.description}
+                      </p>
                     )}
                   </div>
 

@@ -2,12 +2,14 @@ import { AppStorage } from "./index";
 import { ACHIEVEMENTS } from "../data/achievements";
 import { triggerToast, playAchievementSound } from "../../utils/toast";
 
-export async function checkAndUnlock(id: string) {
+export async function checkAndUnlock(id: string, silent = false) {
   try {
     const unlocked = await AppStorage.getUnlockedAchievements();
     if (unlocked.includes(id)) return;
 
     await AppStorage.unlockAchievement(id);
+    if (silent) return;
+
     const item = ACHIEVEMENTS.find(a => a.id === id);
     if (item) {
       // Play a short delay to avoid audio overlapping
@@ -68,33 +70,33 @@ export function calculateStreak(history: any[]): number {
   return streak;
 }
 
-export async function checkFocusAchievements() {
+export async function checkFocusAchievements(silent = false) {
   const history = await AppStorage.getHistory();
   const completed = history.filter(s => s.status === "completed");
   const totalCount = completed.length;
 
   // Session Milestones
-  if (totalCount >= 1) await checkAndUnlock("first_timber");
-  if (totalCount >= 5) await checkAndUnlock("timber_squad");
-  if (totalCount >= 10) await checkAndUnlock("tenacious_ten");
-  if (totalCount >= 25) await checkAndUnlock("silver_quarter");
-  if (totalCount >= 50) await checkAndUnlock("half_centurion");
-  if (totalCount >= 100) await checkAndUnlock("the_centurion");
-  if (totalCount >= 250) await checkAndUnlock("industrial_age");
-  if (totalCount >= 500) await checkAndUnlock("transcendent_flow");
+  if (totalCount >= 1) await checkAndUnlock("first_timber", silent);
+  if (totalCount >= 5) await checkAndUnlock("timber_squad", silent);
+  if (totalCount >= 10) await checkAndUnlock("tenacious_ten", silent);
+  if (totalCount >= 25) await checkAndUnlock("silver_quarter", silent);
+  if (totalCount >= 50) await checkAndUnlock("half_centurion", silent);
+  if (totalCount >= 100) await checkAndUnlock("the_centurion", silent);
+  if (totalCount >= 250) await checkAndUnlock("industrial_age", silent);
+  if (totalCount >= 500) await checkAndUnlock("transcendent_flow", silent);
 
   // Streak checks
   const streakObj = calculateFocusStreak(history);
-  if (streakObj.count >= 2) await checkAndUnlock("spark");
-  if (streakObj.count >= 3) await checkAndUnlock("habitual_spark");
-  if (streakObj.count >= 7) await checkAndUnlock("volcano_streak");
+  if (streakObj.count >= 2) await checkAndUnlock("spark", silent);
+  if (streakObj.count >= 3) await checkAndUnlock("habitual_spark", silent);
+  if (streakObj.count >= 7) await checkAndUnlock("volcano_streak", silent);
 
   // Perfect score check: 5 consecutive completed focus sessions
   if (history.length >= 5) {
     const last5 = history.slice(0, 5);
     const allCompleted = last5.every(s => s.status === "completed");
     if (allCompleted) {
-      await checkAndUnlock("perfect_score");
+      await checkAndUnlock("perfect_score", silent);
     }
   }
 
@@ -105,68 +107,100 @@ export async function checkFocusAchievements() {
     const durationSeconds = Math.floor((last.endedAt - last.startedAt) / 1000);
 
     if (last.status === "completed") {
-      if (durationSeconds < 600) await checkAndUnlock("quick_spark");
-      if (durationSeconds === 1500) await checkAndUnlock("classic_pomodoro");
-      if (durationMins >= 45) await checkAndUnlock("orbiting");
-      if (durationMins >= 60) await checkAndUnlock("flow_pioneer");
-      if (durationMins >= 90) await checkAndUnlock("deep_space_navigator");
-      if (durationMins >= 120) await checkAndUnlock("peak_flow");
+      if (durationSeconds < 600) await checkAndUnlock("quick_spark", silent);
+      if (durationSeconds === 1500) await checkAndUnlock("classic_pomodoro", silent);
+      if (durationMins >= 45) await checkAndUnlock("orbiting", silent);
+      if (durationMins >= 60) await checkAndUnlock("flow_pioneer", silent);
+      if (durationMins >= 90) await checkAndUnlock("deep_space_navigator", silent);
+      if (durationMins >= 120) await checkAndUnlock("peak_flow", silent);
 
       // Time of day checks
       const d = new Date(last.createdAt);
       const hours = d.getHours();
 
-      if (hours < 6) await checkAndUnlock("early_bird");
-      if (hours >= 22) await checkAndUnlock("night_owl");
-      if (hours >= 0 && hours < 3) await checkAndUnlock("midnight_oil");
-      if (hours >= 12 && hours < 14) await checkAndUnlock("midday_rush");
+      if (hours < 6) await checkAndUnlock("early_bird", silent);
+      if (hours >= 22) await checkAndUnlock("night_owl", silent);
+      if (hours >= 0 && hours < 3) await checkAndUnlock("midnight_oil", silent);
+      if (hours >= 12 && hours < 14) await checkAndUnlock("midday_rush", silent);
 
-      if (last.title.length > 50) await checkAndUnlock("precision_intent");
+      if (last.title.length > 50) await checkAndUnlock("precision_intent", silent);
     } else if (last.status === "stopped") {
-      await checkAndUnlock("tactical_retreat");
+      await checkAndUnlock("tactical_retreat", silent);
     }
   }
 }
 
-export async function checkHistoryAchievements() {
+export async function checkHistoryAchievements(silent = false) {
   const history = await AppStorage.getHistory();
-  const notes = history.filter(s => s.accomplishment && s.accomplishment.trim().length > 0);
+  let totalNotesCount = 0;
+  let hasStoppedWithNote = false;
 
-  if (notes.length >= 1) await checkAndUnlock("scribe");
-  if (notes.length >= 10) await checkAndUnlock("chronicle");
-  if (notes.length >= 50) await checkAndUnlock("biographer");
+  history.forEach(s => {
+    let hasNote = false;
+    if (s.accomplishment && s.accomplishment.trim().length > 0) {
+      // Split by newline to avoid double-counting if we joined them, or count unique.
+      // Wait! Since in updateSessionAccomplishment we did:
+      // s.accomplishment = newAccomplishments.join("\n")
+      // If we count s.accomplishment, it has multiple lines. We can just count the elements in accomplishments array if present,
+      // and fall back to counting lines or 1 if only legacy s.accomplishment is present!
+      // This is extremely smart!
+      if (s.accomplishments && s.accomplishments.length > 0) {
+        totalNotesCount += s.accomplishments.filter(n => n.trim().length > 0).length;
+        hasNote = true;
+      } else {
+        totalNotesCount++;
+        hasNote = true;
+      }
+    }
+    if (s.status === "stopped" && hasNote) {
+      hasStoppedWithNote = true;
+    }
+  });
 
-  // Check if any stopped session has a note
-  const stoppedWithNote = history.some(s => s.status === "stopped" && s.accomplishment && s.accomplishment.trim().length > 0);
-  if (stoppedWithNote) {
-    await checkAndUnlock("stoic_optimizer");
+  if (totalNotesCount >= 1) await checkAndUnlock("scribe", silent);
+  if (totalNotesCount >= 10) await checkAndUnlock("chronicle", silent);
+  if (totalNotesCount >= 50) await checkAndUnlock("biographer", silent);
+
+  if (hasStoppedWithNote) {
+    await checkAndUnlock("stoic_optimizer", silent);
   }
 }
 
-export async function checkLinksAchievements() {
+export async function checkLinksAchievements(silent = false) {
   const links = await AppStorage.getLinks();
-  if (links.length >= 1) await checkAndUnlock("ignition_sequence");
-  if (links.length >= 5) await checkAndUnlock("anchor_point");
-  if (links.length >= 10) await checkAndUnlock("cockpit_commander");
+  if (links.length >= 1) await checkAndUnlock("ignition_sequence", silent);
+  if (links.length >= 5) await checkAndUnlock("anchor_point", silent);
+  if (links.length >= 10) await checkAndUnlock("cockpit_commander", silent);
 }
 
-export async function checkCustomizationAchievements() {
+export async function checkCustomizationAchievements(silent = false) {
   const settings = await AppStorage.getSettings();
   const wallpaper = await AppStorage.getWallpaper();
 
   // Settings checks
-  if (settings.clockShowSeconds === false) await checkAndUnlock("second_counter");
-  if (settings.clock24Hour === true) await checkAndUnlock("military_time");
-  if (settings.soundAlert === false) await checkAndUnlock("silent_focus");
-  if (settings.tabTitleTimer === false) await checkAndUnlock("tab_watcher");
+  if (settings.clockShowSeconds === false) await checkAndUnlock("second_counter", silent);
+  if (settings.clock24Hour === true) await checkAndUnlock("military_time", silent);
+  if (settings.soundAlert === false) await checkAndUnlock("silent_focus", silent);
+  if (settings.tabTitleTimer === false) await checkAndUnlock("tab_watcher", silent);
 
   // Wallpaper checks
   if (wallpaper === "none") {
-    await checkAndUnlock("minimalist");
+    await checkAndUnlock("minimalist", silent);
   } else if (wallpaper.startsWith("http://") || wallpaper.startsWith("https://") || wallpaper.startsWith("data:")) {
-    await checkAndUnlock("aesthetic_architect");
+    await checkAndUnlock("aesthetic_architect", silent);
   } else if (wallpaper.startsWith("/wall/") && wallpaper !== "/wall/severina-seidl-3zSazQQX4ik-unsplash.webp") {
-    await checkAndUnlock("interior_designer");
+    await checkAndUnlock("interior_designer", silent);
+  }
+}
+
+export async function syncAllAchievements(silent = true) {
+  try {
+    await checkFocusAchievements(silent);
+    await checkHistoryAchievements(silent);
+    await checkLinksAchievements(silent);
+    await checkCustomizationAchievements(silent);
+  } catch (e) {
+    console.error("Failed to silently sync achievements:", e);
   }
 }
 
