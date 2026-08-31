@@ -53,6 +53,22 @@ const CHANGELOG_DATA: ChangelogVersion[] = [
           "Added a clean achievements card dashboard at the bottom of the Statistics tab featuring locked/unlocked visual states and requirement hover tooltips.",
           "Implemented a reactive arpeggio audio chime and bottom-right toast notifications whenever a milestone is unlocked."
         ]
+      },
+      {
+        category: "Focus Tasks & Daily Schedule",
+        items: [
+          "Introduced a new bottom-left toolbar featuring quick-access widgets: Tasks (To-Do) and Schedule (Timetable).",
+          "Enabled creating checkable task lists that can either run independently or be optionally linked to specific focus sessions.",
+          "Created a Time Table timeline planner with browser desktop notifications that pop up as reminders when scheduled time blocks trigger."
+        ]
+      },
+      {
+        category: "Daily Focus Streaks",
+        items: [
+          "Added a glowing daily focus streak indicator in the right header using dynamic Lucide icons (glowing flame for active, kindling wood for inactive).",
+          "Set up daily focus contribution tracking requiring at least one 3+ minute focus session per day to build and maintain your streak.",
+          "Aligned the streak calculations directly with the gamified streak achievement tiers."
+        ]
       }
     ]
   },

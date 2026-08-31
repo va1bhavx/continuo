@@ -15,6 +15,10 @@ import Statistics from "./components/web/statistics";
 import { useNavigation } from "./context/navigation-context";
 import { AppStorage } from "./lib/storage";
 import { checkCustomizationAchievements } from "./lib/storage/achievements-helper";
+import TodoDrawer from "./components/web/todo-drawer";
+import ScheduleDrawer from "./components/web/schedule-drawer";
+import { ListTodo, CalendarClock } from "lucide-react";
+import { StorageService } from "./lib/storage/chrome-storage";
 
 function App() {
   const navigation = useNavigation();
@@ -26,6 +30,30 @@ function App() {
     "/wall/severina-seidl-3zSazQQX4ik-unsplash.webp",
   );
   const [transitioning, setTransitioning] = useState(false);
+  const [todoOpen, setTodoOpen] = useState(false);
+  const [scheduleOpen, setScheduleOpen] = useState(false);
+  const [scheduleSlots, setScheduleSlots] = useState<any[]>([]);
+
+  const loadSchedule = async () => {
+    try {
+      const saved = await AppStorage.getSchedule();
+      const todayStr = new Date().toLocaleDateString("en-US");
+      const lastDate = await StorageService.get<string>("last_notified_date", "");
+
+      if (lastDate !== todayStr) {
+        // Reset notified status for a new day
+        const resetSlots = saved.map(slot => ({ ...slot, notified: false }));
+        setScheduleSlots(resetSlots);
+        await AppStorage.saveSchedule(resetSlots);
+        await StorageService.set("last_notified_date", todayStr);
+      } else {
+        setScheduleSlots(saved);
+      }
+    } catch (e) {
+      console.error("Failed to load schedule in App:", e);
+    }
+  };
+
   const [activeToast, setActiveToast] = useState<{
     message: string;
     type?: "default" | "achievement";
@@ -56,6 +84,7 @@ function App() {
       const saved = await AppStorage.getWallpaper();
       setWallpaper(saved);
       setBgWallpaper(saved);
+      loadSchedule();
       // Wait a brief moment to check customization achievements on load
       setTimeout(async () => {
         await checkCustomizationAchievements();
@@ -63,6 +92,83 @@ function App() {
     };
     initWallpaper();
   }, []);
+
+  // Sync schedule list updates in real-time
+  useEffect(() => {
+    const handleStorageChange = (changes: any, areaName: string) => {
+      if (areaName === "local" && changes.schedule_slots) {
+        loadSchedule();
+      }
+    };
+    const handleLocalUpdate = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      if (customEvent.detail && customEvent.detail.key === "schedule_slots") {
+        loadSchedule();
+      }
+    };
+
+    if (typeof chrome !== "undefined" && chrome.storage) {
+      chrome.storage.onChanged.addListener(handleStorageChange);
+      window.addEventListener("schedule-update", loadSchedule);
+      return () => {
+        chrome.storage.onChanged.removeListener(handleStorageChange);
+        window.removeEventListener("schedule-update", loadSchedule);
+      };
+    } else {
+      window.addEventListener("local-storage-update", handleLocalUpdate);
+      window.addEventListener("schedule-update", loadSchedule);
+      return () => {
+        window.removeEventListener("local-storage-update", handleLocalUpdate);
+        window.removeEventListener("schedule-update", loadSchedule);
+      };
+    }
+  }, []);
+
+  // Daily Schedule Alarm System
+  useEffect(() => {
+    const checkScheduleAlarms = async () => {
+      if (scheduleSlots.length === 0) return;
+
+      const now = new Date();
+      const currentHrs = String(now.getHours()).padStart(2, "0");
+      const currentMins = String(now.getMinutes()).padStart(2, "0");
+      const currentTimeStr = `${currentHrs}:${currentMins}`;
+
+      let updatedNeeded = false;
+      const updatedSlots = [...scheduleSlots];
+
+      for (let i = 0; i < updatedSlots.length; i++) {
+        const slot = updatedSlots[i];
+        if (slot.time === currentTimeStr && !slot.notified) {
+          // Trigger browser notification
+          if (typeof Notification !== "undefined" && Notification.permission === "granted") {
+            try {
+              new Notification(`⏰ Time Table: ${slot.title}`, {
+                body: slot.description || "It's time for your scheduled block!",
+                icon: "/continuo.png",
+              });
+            } catch (e) {
+              console.warn("Notification trigger failed:", e);
+            }
+          }
+          // Mark notified
+          updatedSlots[i] = { ...slot, notified: true };
+          updatedNeeded = true;
+        }
+      }
+
+      if (updatedNeeded) {
+        setScheduleSlots(updatedSlots);
+        await AppStorage.saveSchedule(updatedSlots);
+      }
+    };
+
+    // Run check immediately and then every 20 seconds
+    checkScheduleAlarms();
+    const interval = setInterval(checkScheduleAlarms, 20000);
+
+    return () => clearInterval(interval);
+  }, [scheduleSlots]);
 
   // Handle global toast messages
   useEffect(() => {
@@ -242,6 +348,33 @@ function App() {
           va1bhavx
         </a>
       </footer>
+
+      {/* Bottom-Left Quick Drawers Toolbar */}
+      {navigation.view === "main" && (
+        <div className="fixed bottom-4 left-4 z-40 flex items-center gap-1.5 bg-surface/15 backdrop-blur-xs border border-border/20 rounded-full px-2 py-1 shadow-sm text-shadow-legible transition-colors hover:bg-surface/20">
+          <button
+            onClick={() => setTodoOpen(true)}
+            className="flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-semibold text-text-secondary hover:text-accent transition-all cursor-pointer border-0 bg-transparent"
+            title="Focus Tasks"
+          >
+            <ListTodo size={12} />
+            <span>Tasks</span>
+          </button>
+          <span className="h-3 w-px bg-border/30" />
+          <button
+            onClick={() => setScheduleOpen(true)}
+            className="flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-semibold text-text-secondary hover:text-accent transition-all cursor-pointer border-0 bg-transparent"
+            title="Daily Schedule"
+          >
+            <CalendarClock size={12} />
+            <span>Schedule</span>
+          </button>
+        </div>
+      )}
+
+      {/* Drawers */}
+      <TodoDrawer isOpen={todoOpen} onClose={() => setTodoOpen(false)} />
+      <ScheduleDrawer isOpen={scheduleOpen} onClose={() => setScheduleOpen(false)} />
 
       {/* Global Toast Notification System */}
       {activeToast && activeToast.type === "achievement" && activeToast.achievement && (

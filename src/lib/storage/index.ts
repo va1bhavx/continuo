@@ -24,11 +24,30 @@ export interface FavoriteLink {
   url: string;
 }
 
+export interface TodoItem {
+  id: string;
+  title: string;
+  description: string;
+  completed: boolean;
+  linkedSessionId?: string;
+  createdAt: number;
+}
+
+export interface ScheduleSlot {
+  id: string;
+  time: string;
+  title: string;
+  description: string;
+  notified?: boolean;
+}
+
 const KEYS = {
   HISTORY: "focus_history",
   SETTINGS: "app_settings",
   WALLPAPER: "current_wallpaper",
   LINKS: "favorite_links",
+  TODOS: "todo_list_items",
+  SCHEDULE: "schedule_slots",
 };
 
 export const AppStorage = {
@@ -105,5 +124,21 @@ export const AppStorage = {
 
   async clearAchievements(): Promise<void> {
     await StorageService.remove("unlocked_achievements");
+  },
+
+  async getTodos(): Promise<TodoItem[]> {
+    return StorageService.get<TodoItem[]>(KEYS.TODOS, []);
+  },
+
+  async saveTodos(todos: TodoItem[]): Promise<void> {
+    await StorageService.set(KEYS.TODOS, todos);
+  },
+
+  async getSchedule(): Promise<ScheduleSlot[]> {
+    return StorageService.get<ScheduleSlot[]>(KEYS.SCHEDULE, []);
+  },
+
+  async saveSchedule(schedule: ScheduleSlot[]): Promise<void> {
+    await StorageService.set(KEYS.SCHEDULE, schedule);
   },
 };
