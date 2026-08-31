@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { X, Clock, Trash2, Bell } from "lucide-react";
 import { AppStorage } from "../../lib/storage";
 import type { ScheduleSlot } from "../../lib/storage";
+import { triggerToast } from "../../utils/toast";
 
 interface ScheduleDrawerProps {
   isOpen: boolean;
@@ -29,12 +30,20 @@ export default function ScheduleDrawer({ isOpen, onClose }: ScheduleDrawerProps)
   useEffect(() => {
     if (!isOpen) return;
 
-    // Check & request browser notification permissions
-    if (typeof Notification !== "undefined") {
+    // If running as Chrome Extension, the 'notifications' manifest permission automatically grants it
+    if (typeof chrome !== "undefined" && chrome.notifications) {
+      setNotifPermission("granted");
+    } else if (typeof Notification !== "undefined") {
+      // Check & request browser notification permissions
       setNotifPermission(Notification.permission);
       if (Notification.permission === "default") {
         Notification.requestPermission().then((perm) => {
           setNotifPermission(perm);
+          if (perm === "denied") {
+            triggerToast({
+              message: "Notifications declined. Enable them to receive real-time schedule alerts, task transition reminders, and daily checklist updates!"
+            });
+          }
         });
       }
     }

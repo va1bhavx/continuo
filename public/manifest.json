@@ -9,5 +9,5 @@
   "icons": {
     "16": "continuo.png"
   },
-  "permissions": ["tabs", "storage"]
+  "permissions": ["tabs", "storage", "notifications"]
 }

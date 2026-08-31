@@ -140,15 +140,26 @@ function App() {
       for (let i = 0; i < updatedSlots.length; i++) {
         const slot = updatedSlots[i];
         if (slot.time === currentTimeStr && !slot.notified) {
-          // Trigger browser notification
-          if (typeof Notification !== "undefined" && Notification.permission === "granted") {
+          // Trigger notification (prioritize Chrome Extension Notifications API if available)
+          if (typeof chrome !== "undefined" && chrome.notifications && chrome.notifications.create) {
+            try {
+              chrome.notifications.create(`schedule_${slot.id}_${Date.now()}`, {
+                type: "basic",
+                iconUrl: "continuo.png",
+                title: `⏰ Time Table: ${slot.title}`,
+                message: slot.description || "It's time for your scheduled block!",
+              });
+            } catch (e) {
+              console.warn("Chrome notification trigger failed:", e);
+            }
+          } else if (typeof Notification !== "undefined" && Notification.permission === "granted") {
             try {
               new Notification(`⏰ Time Table: ${slot.title}`, {
                 body: slot.description || "It's time for your scheduled block!",
                 icon: "/continuo.png",
               });
             } catch (e) {
-              console.warn("Notification trigger failed:", e);
+              console.warn("Standard notification trigger failed:", e);
             }
           }
           // Mark notified
