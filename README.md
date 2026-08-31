@@ -84,6 +84,6 @@ pnpm build
 ---
 
 ## 📄 Privacy & License
-Continuo operates entirely locally. All permissions declared (`storage`, `tabs`) are used exclusively for caching preferences, syncing active timers across multiple tabs, and overriding the browser new tab layout.
+Continuo operates entirely locally. All permissions declared (`storage`, `notifications`) are used exclusively for caching preferences, syncing active timers across multiple tabs, delivering schedule reminders, and overriding the browser new tab layout.
 
 Developed with care by **va1bhavx**.
