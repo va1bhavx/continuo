@@ -4,6 +4,8 @@ import { useNavigation } from "../../context/navigation-context";
 import { AppStorage } from "../../lib/storage";
 import type { FocusSession } from "../../lib/data/mock-data";
 import { getLocalDateString } from "./history";
+import { ACHIEVEMENTS } from "../../lib/data/achievements";
+import { checkAndUnlock } from "../../lib/storage/achievements-helper";
 
 
 // Generates the last N dates with labels
@@ -39,6 +41,7 @@ export default function Statistics() {
   const navigation = useNavigation();
   const [historyData, setHistoryData] = useState<FocusSession[]>([]);
   const [loading, setLoading] = useState(true);
+  const [unlockedAchievements, setUnlockedAchievements] = useState<string[]>([]);
 
   useEffect(() => {
     const loadHistory = async () => {
@@ -52,6 +55,15 @@ export default function Statistics() {
       }
     };
     loadHistory();
+  }, []);
+
+  useEffect(() => {
+    const initStats = async () => {
+      await checkAndUnlock("analyst");
+      const unlocked = await AppStorage.getUnlockedAchievements();
+      setUnlockedAchievements(unlocked);
+    };
+    initStats();
   }, []);
 
   // Compute overall KPI metrics
@@ -239,6 +251,57 @@ export default function Statistics() {
             </div>
           </div>
         )}
+
+        {/* Achievements Grid */}
+        <div className="flex flex-col gap-4 mt-6">
+          <div className="flex flex-col gap-0.5 text-left">
+            <h3 className="text-sm font-semibold text-text-primary">
+              Achievements ({unlockedAchievements.length} / {ACHIEVEMENTS.length})
+            </h3>
+            <p className="text-xs text-text-secondary">
+              Unlock unique milestones by focusing and configuring your tab.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            {ACHIEVEMENTS.map((item) => {
+              const isUnlocked = unlockedAchievements.includes(item.id);
+              return (
+                <div
+                  key={item.id}
+                  className={`group relative p-3 rounded-lg border backdrop-blur-md flex items-center gap-2.5 transition-all duration-300 ${
+                    isUnlocked
+                      ? "bg-surface/80 border-accent/40 shadow-[0_2px_8px_rgba(0,0,0,0.15)]"
+                      : "bg-surface/30 border-border/30 opacity-40 hover:opacity-70"
+                  }`}
+                >
+                  <div className="text-2xl select-none">{item.icon}</div>
+                  <div className="min-w-0">
+                    <p className="text-xs font-bold text-text-primary truncate">{item.title}</p>
+                    <p className="text-[9px] text-text-secondary uppercase tracking-wider font-semibold">
+                      {isUnlocked ? "Unlocked" : "Locked"}
+                    </p>
+                  </div>
+
+                  {/* Styled Hover Tooltip */}
+                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 bg-surface-hover/95 backdrop-blur-md border border-border rounded-lg shadow-xl p-2.5 text-left opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity duration-200 z-50 text-shadow-none">
+                    <div className="flex items-center gap-1.5 mb-1">
+                      <span className="text-sm">{item.icon}</span>
+                      <span className="text-xs font-bold text-text-primary truncate">{item.title}</span>
+                      <span className="text-[10px] ml-auto">{isUnlocked ? "✅" : "🔒"}</span>
+                    </div>
+                    <p className="text-[9px] text-accent font-semibold mb-1">
+                      {item.requirement}
+                    </p>
+                    <p className="text-[9px] text-text-secondary leading-normal italic">
+                      "{item.description}"
+                    </p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
       </section>
     </div>
   );

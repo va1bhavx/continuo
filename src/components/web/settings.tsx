@@ -3,6 +3,7 @@ import { ChevronLeft, Trash2, RotateCcw } from "lucide-react";
 import { useNavigation } from "../../context/navigation-context";
 import { AppStorage } from "../../lib/storage";
 import type { AppSettings } from "../../lib/storage";
+import { checkCustomizationAchievements, checkAndUnlock } from "../../lib/storage/achievements-helper";
 
 const WALLPAPERS = [
   {
@@ -81,6 +82,7 @@ export default function Settings() {
     const updated = { ...settings, [key]: value };
     setSettings(updated);
     await AppStorage.saveSettings(updated);
+    await checkCustomizationAchievements();
   };
 
   const handleWallpaperChange = async (path: string) => {
@@ -89,6 +91,7 @@ export default function Settings() {
     if (path !== customWallpaperUrl) {
       setCustomWallpaperUrl("");
     }
+    await checkCustomizationAchievements();
   };
 
   const handleCustomWallpaperSubmit = async (url: string) => {
@@ -98,6 +101,7 @@ export default function Settings() {
     setSelectedWallpaper(trimmed);
     await AppStorage.saveWallpaper(trimmed);
     showToast("Custom wallpaper applied successfully");
+    await checkCustomizationAchievements();
   };
 
   const showToast = (message: string) => {
@@ -141,6 +145,8 @@ export default function Settings() {
 
         setModal(null);
         showToast("Settings reset to default");
+        await checkAndUnlock("tabula_rasa");
+        await checkCustomizationAchievements();
       },
     });
   };

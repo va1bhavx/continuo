@@ -3,6 +3,7 @@ import { ChevronLeft, Plus, Trash2, Globe, Pencil, Check, X, GripVertical } from
 import { useNavigation } from "../../context/navigation-context";
 import { AppStorage } from "../../lib/storage";
 import type { FavoriteLink } from "../../lib/storage";
+import { checkLinksAchievements, checkAndUnlock } from "../../lib/storage/achievements-helper";
 import {
   DndContext,
   closestCenter,
@@ -261,6 +262,7 @@ export default function ManageLinks() {
     setEditingLinkId(null);
     setEditLabel("");
     setEditUrl("");
+    await checkAndUnlock("renovator");
   };
 
   useEffect(() => {
@@ -316,12 +318,15 @@ export default function ManageLinks() {
 
     setLabel("");
     setUrl("");
+    await checkLinksAchievements();
   };
 
   const handleDeleteLink = async (id: string) => {
     const updated = links.filter((l) => l.id !== id);
     setLinks(updated);
     await AppStorage.saveLinks(updated);
+    await checkAndUnlock("spring_cleaning");
+    await checkLinksAchievements();
   };
 
   const handleDragEnd = async (event: any) => {
@@ -334,6 +339,7 @@ export default function ManageLinks() {
     const updated = arrayMove(links, oldIndex, newIndex);
     setLinks(updated);
     await AppStorage.saveLinks(updated);
+    await checkAndUnlock("organizer");
   };
 
   if (loading) {

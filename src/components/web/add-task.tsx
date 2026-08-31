@@ -3,6 +3,7 @@ import { Input } from "../ui/input";
 import { useNavigation } from "../../context/navigation-context";
 import { AppStorage } from "../../lib/storage";
 import type { AppSettings } from "../../lib/storage";
+import { checkFocusAchievements, checkHistoryAchievements } from "../../lib/storage/achievements-helper";
 
 declare const chrome: any;
 
@@ -298,6 +299,8 @@ export default function AddTask() {
     if (settings.soundAlert) {
       playAlertSound();
     }
+
+    await checkFocusAchievements();
   };
 
   const handleSaveNote = async () => {
@@ -305,6 +308,7 @@ export default function AddTask() {
 
     await AppStorage.updateSessionAccomplishment(currentSessionId, accomplishment);
     setIsNoteSaved(true);
+    await checkHistoryAchievements();
   };
 
   const handleStartAnother = async () => {

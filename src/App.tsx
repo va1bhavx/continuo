@@ -14,6 +14,7 @@ import RightHeader from "./components/web/right-header";
 import Statistics from "./components/web/statistics";
 import { useNavigation } from "./context/navigation-context";
 import { AppStorage } from "./lib/storage";
+import { checkCustomizationAchievements } from "./lib/storage/achievements-helper";
 
 function App() {
   const navigation = useNavigation();
@@ -25,6 +26,15 @@ function App() {
     "/wall/severina-seidl-3zSazQQX4ik-unsplash.webp",
   );
   const [transitioning, setTransitioning] = useState(false);
+  const [activeToast, setActiveToast] = useState<{
+    message: string;
+    type?: "default" | "achievement";
+    achievement?: {
+      title: string;
+      description: string;
+      icon: string;
+    };
+  } | null>(null);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -40,15 +50,41 @@ function App() {
     window.scrollTo(0, 0);
   }, [navigation.view]);
 
-  // Fetch initial wallpaper settings
+  // Fetch initial wallpaper settings & run initial achievement checks
   useEffect(() => {
     const initWallpaper = async () => {
       const saved = await AppStorage.getWallpaper();
       setWallpaper(saved);
       setBgWallpaper(saved);
+      // Wait a brief moment to check customization achievements on load
+      setTimeout(async () => {
+        await checkCustomizationAchievements();
+      }, 1000);
     };
     initWallpaper();
   }, []);
+
+  // Handle global toast messages
+  useEffect(() => {
+    const handleShowToast = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      if (customEvent.detail) {
+        setActiveToast(customEvent.detail);
+      }
+    };
+    window.addEventListener("app-show-toast", handleShowToast);
+    return () => window.removeEventListener("app-show-toast", handleShowToast);
+  }, []);
+
+  // Auto-dismiss toast after 4.5 seconds
+  useEffect(() => {
+    if (activeToast) {
+      const timer = setTimeout(() => {
+        setActiveToast(null);
+      }, 4500);
+      return () => clearTimeout(timer);
+    }
+  }, [activeToast]);
 
   // Sync wallpaper updates in real-time
   useEffect(() => {
@@ -206,6 +242,46 @@ function App() {
           va1bhavx
         </a>
       </footer>
+
+      {/* Global Toast Notification System */}
+      {activeToast && activeToast.type === "achievement" && activeToast.achievement && (
+        <div className="fixed bottom-6 right-6 z-[9999] max-w-sm w-full bg-surface/90 backdrop-blur-md border border-accent/40 rounded-xl shadow-[0_4px_24px_rgba(0,0,0,0.3)] p-4 flex gap-3.5 animate-slide-up-subtle text-shadow-none text-left">
+          <div className="flex items-center justify-center w-12 h-12 rounded-lg bg-accent/10 border border-accent/20 text-3xl animate-bounce">
+            {activeToast.achievement.icon}
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-[10px] uppercase tracking-wider font-semibold text-accent mb-0.5">
+              Achievement Unlocked!
+            </p>
+            <h4 className="text-sm font-bold text-text-primary mb-0.5 truncate">
+              {activeToast.achievement.title}
+            </h4>
+            <p className="text-xs text-text-secondary leading-normal">
+              {activeToast.achievement.description}
+            </p>
+          </div>
+          <button
+            onClick={() => setActiveToast(null)}
+            className="text-text-secondary hover:text-text-primary self-start transition-colors cursor-pointer"
+          >
+            <span className="sr-only">Close</span>
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+      )}
+
+      {activeToast && activeToast.type !== "achievement" && (
+        <div className="fixed bottom-6 right-6 z-[9999] max-w-sm bg-surface/90 backdrop-blur-md border border-border rounded-lg shadow-lg px-4 py-3 text-sm text-text-primary flex items-center justify-between gap-3 animate-slide-up-subtle text-shadow-none text-left">
+          <span>{activeToast.message}</span>
+          <button onClick={() => setActiveToast(null)} className="text-text-secondary hover:text-text-primary cursor-pointer">
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+      )}
     </div>
   );
 }

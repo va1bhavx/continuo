@@ -45,6 +45,14 @@ const CHANGELOG_DATA: ChangelogVersion[] = [
         items: [
           "Enabled setting custom backgrounds by pasting direct image URLs in Settings, keeping custom tab styling fully personalized."
         ]
+      },
+      {
+        category: "Gamified Achievements System",
+        items: [
+          "Introduced 50 unique unlockable achievements spanning Focus sessions, Customization settings, Quick Links, and History filters.",
+          "Added a clean achievements card dashboard at the bottom of the Statistics tab featuring locked/unlocked visual states and requirement hover tooltips.",
+          "Implemented a reactive arpeggio audio chime and bottom-right toast notifications whenever a milestone is unlocked."
+        ]
       }
     ]
   },

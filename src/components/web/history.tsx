@@ -3,6 +3,7 @@ import { CheckCheck, ChevronLeft, CircleStop, Dot, Search, X } from "lucide-reac
 import { useNavigation } from "../../context/navigation-context";
 import { AppStorage } from "../../lib/storage";
 import type { FocusSession } from "../../lib/data/mock-data";
+import { checkAndUnlock } from "../../lib/storage/achievements-helper";
 
 export const formatStartTime = (timestamp: number) => {
   return new Date(timestamp).toLocaleTimeString("en-US", {
@@ -107,11 +108,31 @@ export default function History() {
 
   const hasActiveFilters = searchQuery !== "" || statusFilter !== "all" || timeframeFilter !== "all" || durationFilter !== "all";
 
+  // Trigger history achievements when filters/search are used
+  useEffect(() => {
+    if (searchQuery.trim().length > 0) {
+      checkAndUnlock("historian");
+    }
+  }, [searchQuery]);
+
+  useEffect(() => {
+    if (timeframeFilter !== "all") {
+      checkAndUnlock("time_traveler");
+    }
+  }, [timeframeFilter]);
+
+  useEffect(() => {
+    if (statusFilter !== "all" || durationFilter !== "all") {
+      checkAndUnlock("category_inspector");
+    }
+  }, [statusFilter, durationFilter]);
+
   const handleResetFilters = () => {
     setSearchQuery("");
     setStatusFilter("all");
     setTimeframeFilter("all");
     setDurationFilter("all");
+    checkAndUnlock("resetter");
   };
 
   // Filter and group history data

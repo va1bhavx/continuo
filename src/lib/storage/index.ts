@@ -91,4 +91,19 @@ export const AppStorage = {
   async saveLinks(links: FavoriteLink[]): Promise<void> {
     await StorageService.set(KEYS.LINKS, links);
   },
+
+  async getUnlockedAchievements(): Promise<string[]> {
+    return StorageService.get<string[]>("unlocked_achievements", []);
+  },
+
+  async unlockAchievement(id: string): Promise<void> {
+    const unlocked = await this.getUnlockedAchievements();
+    if (!unlocked.includes(id)) {
+      await StorageService.set("unlocked_achievements", [...unlocked, id]);
+    }
+  },
+
+  async clearAchievements(): Promise<void> {
+    await StorageService.remove("unlocked_achievements");
+  },
 };
