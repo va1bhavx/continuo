@@ -11,17 +11,20 @@ No feeds, no notifications, no competitive streaks, and no distractions. Just a 
 ## ✨ Core Features
 
 *   **Intention Focus**: Set your current task and start working. The timer syncs with the browser tab title so you can track progress at a glance.
-*   **Stopwatch Timer**: Active focus stopwatch (`HH:MM:SS`) to keep you accountable. Supports starting directly via the **Enter** key.
-*   **Accomplishment Log**: Log what you accomplished upon completing or stopping a focus session.
-*   **Reorderable Quick Links**: Clean list of shortcuts on your dashboard with fluid drag-and-drop sorting controls in the settings.
-*   **History Panel**: Daily-grouped cards summarizing focus logs, task outcomes, start times, durations, and accomplishment notes.
+*   **Stopwatch Timer with Pause/Resume**: Active focus stopwatch (`HH:MM:SS`) with seamless pause and resume capabilities that maintain exact elapsed time across tab reloads.
+*   **Accomplishment Log**: Log what you accomplished upon completing or stopping a focus session to build a history of achievements.
+*   **Focus Statistics Dashboard**: Track your productivity with key metrics (Total Focus Time, Success Rate, Average Duration) and beautiful visualizations including a 7-day SVG bar trend chart and a circular completion ring.
+*   **Gamified Achievements System**: Unlock 50 unique achievements across focus milestones, customizations, quick links, and filtering. Includes custom arpeggio audio chimes and reactive toast notifications.
+*   **Focus Tasks & Daily Schedule**: Slide-out drawers for a Tasks (To-Do) checklist (linkable to history sessions) and a Time Table planner with browser desktop reminders for scheduled blocks.
+*   **Daily Focus Streaks**: Maintain daily streaks by completing focus sessions of 3+ minutes, highlighted by a glowing header flame indicator.
+*   **Reorderable Quick Links Dock**: Centered dashboard shortcuts dock with fluid drag-and-drop reordering powered by `@dnd-kit`.
+*   **History Panel with Search & Filter**: Search logs by keywords and filter by session Status, Timeframe (Today, Yesterday, 7 Days, 30 Days), or Duration categories.
 *   **Settings & Customization**:
-    *   Cycle between high-quality background wallpapers or a solid dark theme.
-    *   Toggle seconds in the live header clock.
-    *   Switch between 12-hour AM/PM and 24-hour formats.
-    *   Toggle audio alert sound chimes.
-    *   Toggle tab title timer sync.
-*   **Safety Modals & Toasts**: Double-check destructive actions with confirmation overlays, accompanied by sleek toast notification alerts.
+    *   Cycle between high-quality background wallpapers, a solid dark theme, or paste custom wallpaper URLs.
+    *   Toggle seconds display in the live header clock.
+    *   Switch between 12-hour AM/PM and 24-hour clock formats.
+    *   Toggle audio alert sound chimes and tab title timer sync.
+*   **Safety Modals & Micro-animations**: Confirm destructive operations (e.g. clearing history) with double-check modal overlays and enjoy smooth transition wipe sweep animations when switching wallpapers.
 *   **100% Local Privacy**: Your data is yours. Continuo stores everything inside `chrome.storage.local`. No external servers, no tracking, and zero telemetry.
 
 ---
