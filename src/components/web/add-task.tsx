@@ -34,6 +34,8 @@ export default function AddTask() {
 
   const [focusState, setFocusState] = useState<FocusState>("idle");
   const [seconds, setSeconds] = useState(0);
+  const [isPaused, setIsPaused] = useState(false);
+  const [startedAt, setStartedAt] = useState<number>(0);
   const [task, setTask] = useState<string>("");
   const [accomplishment, setAccomplishment] = useState<string>("");
   const [isNoteSaved, setIsNoteSaved] = useState(false);
@@ -53,7 +55,7 @@ export default function AddTask() {
   useEffect(() => {
     let interval: ReturnType<typeof setInterval> | null = null;
 
-    if (focusState === "running") {
+    if (focusState === "running" && !isPaused) {
       interval = setInterval(() => {
         setSeconds((s) => s + 1);
       }, 1000);
@@ -62,7 +64,7 @@ export default function AddTask() {
     return () => {
       if (interval) clearInterval(interval);
     };
-  }, [focusState]);
+  }, [focusState, isPaused]);
 
   // Check storage for active running session on mount
   useEffect(() => {
@@ -72,11 +74,20 @@ export default function AddTask() {
         if (active) {
           setTask(active.task);
           setFocusState(active.focusState);
+          setStartedAt(active.startedAt);
+          const activeIsPaused = !!active.isPaused;
+          const activeAccumulated = active.accumulatedSeconds || 0;
+          setIsPaused(activeIsPaused);
+
           if (active.focusState === "running") {
-            const elapsed = Math.floor((Date.now() - active.startedAt) / 1000);
-            setSeconds(elapsed);
+            if (activeIsPaused) {
+              setSeconds(activeAccumulated);
+            } else {
+              const elapsed = activeAccumulated + Math.floor((Date.now() - active.startedAt) / 1000);
+              setSeconds(elapsed);
+            }
           } else if (active.focusState === "summary") {
-            const elapsed = Math.floor((Date.now() - active.startedAt) / 1000);
+            const elapsed = activeAccumulated + Math.floor((Date.now() - active.startedAt) / 1000);
             setSeconds(elapsed);
             if (active.sessionStatus) setSessionStatus(active.sessionStatus);
             if (active.currentSessionId) setCurrentSessionId(active.currentSessionId);
@@ -112,14 +123,28 @@ export default function AddTask() {
         setIsNoteSaved(false);
         setCurrentSessionId(null);
         setFocusState("idle");
+        setIsPaused(false);
+        setStartedAt(0);
       } else if (active.focusState === "running") {
         setTask(active.task);
         setFocusState("running");
-        const elapsed = Math.floor((Date.now() - active.startedAt) / 1000);
-        setSeconds(elapsed);
+        setStartedAt(active.startedAt);
+        const activeIsPaused = !!active.isPaused;
+        const activeAccumulated = active.accumulatedSeconds || 0;
+        setIsPaused(activeIsPaused);
+
+        if (activeIsPaused) {
+          setSeconds(activeAccumulated);
+        } else {
+          const elapsed = activeAccumulated + Math.floor((Date.now() - active.startedAt) / 1000);
+          setSeconds(elapsed);
+        }
       } else if (active.focusState === "summary") {
         setTask(active.task);
         setFocusState("summary");
+        const activeAccumulated = active.accumulatedSeconds || 0;
+        const elapsed = activeAccumulated + Math.floor((Date.now() - active.startedAt) / 1000);
+        setSeconds(elapsed);
         if (active.sessionStatus) setSessionStatus(active.sessionStatus);
         if (active.currentSessionId) setCurrentSessionId(active.currentSessionId);
       }
@@ -173,14 +198,50 @@ export default function AddTask() {
 
 
   const handleStartFocus = async () => {
-    const startedAt = Date.now();
+    const started = Date.now();
     setFocusState("running");
     setSeconds(0);
+    setIsPaused(false);
+    setStartedAt(started);
+
+    await AppStorage.setActiveSession({
+      task: task,
+      startedAt: started,
+      focusState: "running",
+      isPaused: false,
+      accumulatedSeconds: 0,
+    });
+  };
+
+  const handlePauseFocus = async () => {
+    if (focusState !== "running" || isPaused) return;
+
+    const currentTotal = seconds;
+
+    setIsPaused(true);
 
     await AppStorage.setActiveSession({
       task: task,
       startedAt: startedAt,
       focusState: "running",
+      isPaused: true,
+      accumulatedSeconds: currentTotal,
+    });
+  };
+
+  const handleResumeFocus = async () => {
+    if (focusState !== "running" || !isPaused) return;
+
+    const newStartedAt = Date.now();
+    setIsPaused(false);
+    setStartedAt(newStartedAt);
+
+    await AppStorage.setActiveSession({
+      task: task,
+      startedAt: newStartedAt,
+      focusState: "running",
+      isPaused: false,
+      accumulatedSeconds: seconds,
     });
   };
 
@@ -231,6 +292,7 @@ export default function AddTask() {
       focusState: "summary",
       sessionStatus: status,
       currentSessionId: sessionId,
+      accumulatedSeconds: seconds,
     });
 
     if (settings.soundAlert) {
@@ -252,6 +314,8 @@ export default function AddTask() {
     setIsNoteSaved(false);
     setCurrentSessionId(null);
     setFocusState("idle");
+    setIsPaused(false);
+    setStartedAt(0);
 
     await AppStorage.clearActiveSession();
   };
@@ -444,24 +508,93 @@ export default function AddTask() {
 
         {focusState === "running" && (
           <div className="flex items-center gap-3 animate-slide-up-subtle">
+            {isPaused ? (
+              <button
+                type="button"
+                className="
+                  h-11
+                  rounded-md
+                  bg-accent
+                  px-5
+                  text-sm
+                  font-medium
+                  text-accent-text!
+                  shadow-[0_1px_2px_rgba(0,0,0,0.2)]
+                  transition-all
+                  duration-150
+
+                  hover:bg-accent-hover
+                  active:scale-[0.98]
+                  cursor-pointer
+                "
+                onClick={handleResumeFocus}
+              >
+                Resume
+              </button>
+            ) : (
+              <button
+                type="button"
+                className="
+                  h-11
+                  rounded-md
+                  border
+                  border-border
+                  bg-transparent
+                  px-5
+                  text-sm
+                  font-medium
+                  text-text-primary
+                  transition-all
+                  duration-150
+
+                  hover:bg-surface-hover
+                  active:scale-[0.98]
+                  cursor-pointer
+                "
+                onClick={handlePauseFocus}
+              >
+                Pause
+              </button>
+            )}
+
             <button
               type="button"
-              className="
-                h-11
-                rounded-md
-                bg-accent
-                px-5
-                text-sm
-                font-medium
-                text-accent-text!
-                shadow-[0_1px_2px_rgba(0,0,0,0.2)]
-                transition-all
-                duration-150
+              className={
+                isPaused
+                  ? `
+                    h-11
+                    rounded-md
+                    border
+                    border-border
+                    bg-transparent
+                    px-5
+                    text-sm
+                    font-medium
+                    text-text-primary
+                    transition-all
+                    duration-150
 
-                hover:bg-accent-hover
-                active:scale-[0.98]
-                cursor-pointer
-              "
+                    hover:bg-surface-hover
+                    active:scale-[0.98]
+                    cursor-pointer
+                  `
+                  : `
+                    h-11
+                    rounded-md
+                    bg-accent
+                    px-5
+                    text-sm
+                    font-medium
+                    text-accent-text!
+                    shadow-[0_1px_2px_rgba(0,0,0,0.2)]
+                    transition-all
+                    duration-150
+
+                    hover:bg-accent-hover
+                    active:scale-[0.98]
+                    cursor-pointer
+                  `
+              }
               onClick={() => handleEndSession("completed")}
             >
               Complete

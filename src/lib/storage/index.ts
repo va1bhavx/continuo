@@ -7,6 +7,8 @@ export interface ActiveSession {
   focusState: "running" | "summary";
   sessionStatus?: "completed" | "stopped";
   currentSessionId?: string;
+  isPaused?: boolean;
+  accumulatedSeconds?: number;
 }
 
 export interface AppSettings {

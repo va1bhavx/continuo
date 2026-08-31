@@ -1,4 +1,4 @@
-import { Link, RotateCcwClock, SlidersHorizontal } from "lucide-react";
+import { Link, RotateCcwClock, SlidersHorizontal, BarChart3 } from "lucide-react";
 import { useNavigation } from "../../context/navigation-context";
 
 export default function RightHeader() {
@@ -17,6 +17,14 @@ export default function RightHeader() {
 
   return (
     <div className="flex items-center gap-2">
+      <button
+        className={iconClass}
+        aria-label="Statistics"
+        title="Statistics"
+        onClick={() => navigation.setView("stats")}
+      >
+        <BarChart3 size={18} className="group-hover:text-text-primary" />
+      </button>
       <button
         className={iconClass}
         aria-label="History"

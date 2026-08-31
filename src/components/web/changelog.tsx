@@ -14,9 +14,43 @@ interface ChangelogVersion {
 
 const CHANGELOG_DATA: ChangelogVersion[] = [
   {
+    version: "v1.2.0",
+    date: "August 31, 2026",
+    badge: "Latest Release",
+    type: "minor",
+    changes: [
+      {
+        category: "Focus Statistics Tab",
+        items: [
+          "Added a dedicated Statistics view with key metrics (Total Focus Time, Success Rate, Average Duration, and session splits).",
+          "Implemented a custom SVG Bar Chart showing the last 7 days of focus trends directly in a clean responsive layout.",
+          "Added a Circular Progress ring displaying the session completion vs stopped ratios."
+        ]
+      },
+      {
+        category: "History Filtering & Search",
+        items: [
+          "Introduced a text search bar to search previous focus sessions by title or accomplishment note.",
+          "Added dropdown select filters for session Status (Completed vs Stopped), Timeframe (Today, Yesterday, Last 7 Days, Last 30 Days), and Duration categories."
+        ]
+      },
+      {
+        category: "Focus Timer Controls",
+        items: [
+          "Added Pause and Resume functionality to active focus session timers, maintaining exact elapsed time tracking across page reloads and multiple open browser tabs."
+        ]
+      },
+      {
+        category: "Custom Wallpaper URLs",
+        items: [
+          "Enabled setting custom backgrounds by pasting direct image URLs in Settings, keeping custom tab styling fully personalized."
+        ]
+      }
+    ]
+  },
+  {
     version: "v1.1.0",
     date: "August 27, 2026",
-    badge: "Latest Release",
     type: "minor",
     changes: [
       {

@@ -11,6 +11,7 @@ import FeedbackSupport from "./components/web/feedback-support";
 import Changelog from "./components/web/changelog";
 import LinksCard from "./components/web/links-card";
 import RightHeader from "./components/web/right-header";
+import Statistics from "./components/web/statistics";
 import { useNavigation } from "./context/navigation-context";
 import { AppStorage } from "./lib/storage";
 
@@ -143,6 +144,12 @@ function App() {
       {navigation.view === "history" && (
         <main className="max-w-5xl w-full mx-auto px-4 py-6 animate-fade-in">
           <History />
+        </main>
+      )}
+
+      {navigation.view === "stats" && (
+        <main className="max-w-5xl w-full mx-auto px-4 py-6 animate-fade-in">
+          <Statistics />
         </main>
       )}
 

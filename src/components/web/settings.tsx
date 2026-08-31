@@ -19,6 +19,15 @@ const WALLPAPERS = [
     name: "Sudhakara Rao",
     path: "/wall/sudhakara-rao-RqK9eJ_YCWk-unsplash.webp",
   },
+
+  {
+    name: "Ands Mahardika",
+    path: "/wall/ands-mahardika-BsElTvIfweY-unsplash.jpg",
+  },
+  {
+    name: "Aleksa Geletey",
+    path: "/wall/aleksa-geletey-hahW3n-VxoA-unsplash.jpg",
+  },
   { name: "Solid Dark Color", path: "none" },
 ];
 
@@ -33,6 +42,7 @@ export default function Settings() {
   });
 
   const [selectedWallpaper, setSelectedWallpaper] = useState<string>("");
+  const [customWallpaperUrl, setCustomWallpaperUrl] = useState<string>("");
   const [loading, setLoading] = useState(true);
 
   // Toast and Modal states
@@ -53,6 +63,11 @@ export default function Settings() {
         ]);
         setSettings(savedSettings);
         setSelectedWallpaper(savedWallpaper);
+
+        const isPreset = WALLPAPERS.some((w) => w.path === savedWallpaper);
+        if (!isPreset && savedWallpaper !== "none") {
+          setCustomWallpaperUrl(savedWallpaper);
+        }
       } catch (err) {
         console.error("Failed to load settings:", err);
       } finally {
@@ -71,6 +86,18 @@ export default function Settings() {
   const handleWallpaperChange = async (path: string) => {
     setSelectedWallpaper(path);
     await AppStorage.saveWallpaper(path);
+    if (path !== customWallpaperUrl) {
+      setCustomWallpaperUrl("");
+    }
+  };
+
+  const handleCustomWallpaperSubmit = async (url: string) => {
+    const trimmed = url.trim();
+    if (!trimmed) return;
+    setCustomWallpaperUrl(trimmed);
+    setSelectedWallpaper(trimmed);
+    await AppStorage.saveWallpaper(trimmed);
+    showToast("Custom wallpaper applied successfully");
   };
 
   const showToast = (message: string) => {
@@ -82,12 +109,13 @@ export default function Settings() {
     setModal({
       type: "clear_history",
       title: "Clear Session History",
-      message: "Are you sure you want to permanently delete all saved focus logs? This action cannot be undone.",
+      message:
+        "Are you sure you want to permanently delete all saved focus logs? This action cannot be undone.",
       action: async () => {
         await AppStorage.clearHistory();
         setModal(null);
         showToast("History cleared successfully");
-      }
+      },
     });
   };
 
@@ -95,7 +123,8 @@ export default function Settings() {
     setModal({
       type: "reset_preferences",
       title: "Reset Preferences",
-      message: "Are you sure you want to restore all settings and backgrounds to their defaults?",
+      message:
+        "Are you sure you want to restore all settings and backgrounds to their defaults?",
       action: async () => {
         const defaults: AppSettings = {
           clockShowSeconds: true,
@@ -112,7 +141,7 @@ export default function Settings() {
 
         setModal(null);
         showToast("Settings reset to default");
-      }
+      },
     });
   };
 
@@ -191,6 +220,34 @@ export default function Settings() {
                 </button>
               ))}
             </div>
+
+            {/* Custom Wallpaper Input */}
+            <div className="flex flex-col gap-1.5 mt-2 animate-fade-in">
+              <label className="text-[11px] font-semibold text-text-secondary">
+                Or use a Custom Wallpaper URL
+              </label>
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  handleCustomWallpaperSubmit(customWallpaperUrl);
+                }}
+                className="flex gap-2"
+              >
+                <input
+                  type="url"
+                  placeholder="Enter a custom wallpaper URL"
+                  value={customWallpaperUrl}
+                  onChange={(e) => setCustomWallpaperUrl(e.target.value)}
+                  className="flex-1 h-9 px-3 rounded-md bg-surface border border-border text-xs text-text-primary placeholder:text-text-tertiary focus:outline-none focus:border-accent-soft-border focus:shadow-[0_0_0_3px_var(--accent-soft)] transition-all"
+                />
+                <button
+                  type="submit"
+                  className="h-9 px-4 rounded-md text-xs font-semibold bg-accent text-accent-text! hover:bg-accent-hover active:scale-[0.98] transition-all duration-150 cursor-pointer border-0"
+                >
+                  Apply
+                </button>
+              </form>
+            </div>
           </div>
 
           <div className="border-t border-border/40" />
@@ -232,8 +289,12 @@ export default function Settings() {
         <div className="flex flex-col gap-6 p-5 rounded-lg bg-surface/70 backdrop-blur-md border border-border-strong/20">
           <div className="flex items-center justify-between">
             <div className="flex flex-col text-left">
-              <h2 className="text-md font-semibold text-text-primary">About Continuo</h2>
-              <p className="text-xs text-text-secondary mt-0.5 font-normal">Read about why Continuo was built and its core philosophy.</p>
+              <h2 className="text-md font-semibold text-text-primary">
+                About Continuo
+              </h2>
+              <p className="text-xs text-text-secondary mt-0.5 font-normal">
+                Read about why Continuo was built and its core philosophy.
+              </p>
             </div>
             <button
               onClick={() => navigation.setView("about")}
@@ -246,8 +307,12 @@ export default function Settings() {
           <div className="border-t border-border/40" />
 
           <div className="flex flex-col">
-            <h2 className="text-md font-semibold text-text-primary mb-1">Support & Legal</h2>
-            <p className="text-xs text-text-secondary mb-3 font-normal">Contact the developer or read user policies.</p>
+            <h2 className="text-md font-semibold text-text-primary mb-1">
+              Support & Legal
+            </h2>
+            <p className="text-xs text-text-secondary mb-3 font-normal">
+              Contact the developer or read user policies.
+            </p>
 
             <div className="flex flex-col divide-y divide-border/40 text-sm">
               <button
@@ -255,15 +320,19 @@ export default function Settings() {
                 className="flex items-center justify-between py-3.5 first:pt-0 text-text-primary hover:text-accent transition-colors bg-transparent border-0 cursor-pointer w-full text-left font-medium"
               >
                 <span>Feedback & Support</span>
-                <span className="text-xs text-text-secondary font-medium">Get Help &rarr;</span>
+                <span className="text-xs text-text-secondary font-medium">
+                  Get Help &rarr;
+                </span>
               </button>
-              
+
               <button
                 onClick={() => navigation.setView("changelog")}
                 className="flex items-center justify-between py-3.5 text-text-primary hover:text-accent transition-colors bg-transparent border-0 cursor-pointer w-full text-left font-medium"
               >
                 <span>Changelog & Release Notes</span>
-                <span className="text-xs text-text-secondary font-medium">View Timeline &rarr;</span>
+                <span className="text-xs text-text-secondary font-medium">
+                  View Timeline &rarr;
+                </span>
               </button>
 
               <button
@@ -271,15 +340,19 @@ export default function Settings() {
                 className="flex items-center justify-between py-3.5 text-text-primary hover:text-accent transition-colors bg-transparent border-0 cursor-pointer w-full text-left font-medium"
               >
                 <span>Privacy Policy</span>
-                <span className="text-xs text-text-secondary font-medium">Read &rarr;</span>
+                <span className="text-xs text-text-secondary font-medium">
+                  Read &rarr;
+                </span>
               </button>
-              
+
               <button
                 onClick={() => navigation.setView("terms")}
                 className="flex items-center justify-between py-3.5 last:pb-0 text-text-primary hover:text-accent transition-colors bg-transparent border-0 cursor-pointer w-full text-left font-medium"
               >
                 <span>Terms of Use</span>
-                <span className="text-xs text-text-secondary font-medium">Read &rarr;</span>
+                <span className="text-xs text-text-secondary font-medium">
+                  Read &rarr;
+                </span>
               </button>
             </div>
           </div>
@@ -342,8 +415,12 @@ export default function Settings() {
         <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center animate-fade-in">
           <div className="bg-surface border border-border-strong/30 rounded-lg p-6 max-w-sm w-full mx-4 shadow-xl flex flex-col gap-4">
             <div className="flex flex-col gap-1.5 text-left">
-              <h3 className="text-md font-bold text-text-primary">{modal.title}</h3>
-              <p className="text-xs text-text-secondary leading-relaxed">{modal.message}</p>
+              <h3 className="text-md font-bold text-text-primary">
+                {modal.title}
+              </h3>
+              <p className="text-xs text-text-secondary leading-relaxed">
+                {modal.message}
+              </p>
             </div>
             <div className="flex items-center justify-end gap-2.5 mt-2">
               <button

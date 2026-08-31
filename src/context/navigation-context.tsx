@@ -1,7 +1,7 @@
 import { createContext, useContext, useState } from "react";
 
 interface NavigationContextProps {
-  view: "links" | "history" | "settings" | "main" | "about" | "privacy" | "terms" | "feedback" | "changelog";
+  view: "links" | "history" | "settings" | "main" | "about" | "privacy" | "terms" | "feedback" | "changelog" | "stats";
   setView: (view: NavigationContextProps["view"]) => void;
 }
 
