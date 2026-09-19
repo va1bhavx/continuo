@@ -1,9 +1,10 @@
 import { useEffect, useState, useMemo } from "react";
 import { CheckCheck, ChevronLeft, CircleStop, Dot, Search, X } from "lucide-react";
 import { useNavigation } from "../../context/navigation-context";
-import { AppStorage } from "../../lib/storage";
 import type { FocusSession } from "../../lib/data/mock-data";
 import { checkAndUnlock } from "../../lib/storage/achievements-helper";
+
+import { useSessionHistory } from "../../hooks/useSessionHistory";
 
 export const formatStartTime = (timestamp: number) => {
   return new Date(timestamp).toLocaleTimeString("en-US", {
@@ -81,9 +82,8 @@ export const getDayLabel = (timestamp: number) => {
 
 export default function History() {
   const navigation = useNavigation();
-  const [historyData, setHistoryData] = useState<FocusSession[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [referenceTime, setReferenceTime] = useState(0);
+  const { history: historyData, loading } = useSessionHistory();
+  const [referenceTime, setReferenceTime] = useState(() => Date.now());
 
   // Filter States
   const [searchQuery, setSearchQuery] = useState("");
@@ -92,19 +92,8 @@ export default function History() {
   const [durationFilter, setDurationFilter] = useState<"all" | "short" | "medium" | "long">("all");
 
   useEffect(() => {
-    const loadHistory = async () => {
-      try {
-        const data = await AppStorage.getHistory();
-        setHistoryData(data);
-        setReferenceTime(Date.now());
-      } catch (error) {
-        console.error("Failed to load history:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    loadHistory();
-  }, []);
+    setReferenceTime(Date.now());
+  }, [historyData]);
 
   const hasActiveFilters = searchQuery !== "" || statusFilter !== "all" || timeframeFilter !== "all" || durationFilter !== "all";
 

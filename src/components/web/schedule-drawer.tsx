@@ -1,7 +1,16 @@
 import { useEffect, useState } from "react";
-import { X, Clock, Trash2, Bell } from "lucide-react";
-import { AppStorage } from "../../lib/storage";
-import type { ScheduleSlot } from "../../lib/storage";
+import {
+  X,
+  Clock,
+  Trash2,
+  Bell,
+  Check,
+  RotateCcw,
+  CheckCircle2,
+  AlertCircle,
+  XCircle,
+} from "lucide-react";
+import { useSchedules } from "../../hooks/useSchedules";
 import { triggerToast } from "../../utils/toast";
 
 interface ScheduleDrawerProps {
@@ -10,7 +19,7 @@ interface ScheduleDrawerProps {
 }
 
 // Formats 24h clock string "14:30" to readable "02:30 PM"
-const format12Hour = (time24: string) => {
+export const format12Hour = (time24: string) => {
   if (!time24) return "";
   const [hrsStr, minsStr] = time24.split(":");
   const hrs = parseInt(hrsStr, 10);
@@ -23,12 +32,21 @@ export default function ScheduleDrawer({
   isOpen,
   onClose,
 }: ScheduleDrawerProps) {
-  const [schedule, setSchedule] = useState<ScheduleSlot[]>([]);
+  const {
+    upcomingSlots,
+    historySlots,
+    loading,
+    addSlot,
+    completeSlot,
+    cancelSlot,
+    restoreSlot,
+    permanentlyDeleteSlot,
+  } = useSchedules();
+
   const [time, setTime] = useState("");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [type, setType] = useState<"daily" | "once">("daily");
-  const [loading, setLoading] = useState(true);
   const [notifPermission, setNotifPermission] =
     useState<NotificationPermission>("default");
 
@@ -47,25 +65,12 @@ export default function ScheduleDrawer({
           if (perm === "denied") {
             triggerToast({
               message:
-                "Notifications declined. Enable them to receive real-time schedule alerts, task transition reminders, and daily checklist updates!",
+                "Notifications declined. Enable them in your browser settings to receive real-time schedule alerts.",
             });
           }
         });
       }
     }
-
-    const loadSchedule = async () => {
-      try {
-        const saved = await AppStorage.getSchedule();
-        setSchedule(saved);
-      } catch (e) {
-        console.error("Failed to load schedule:", e);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadSchedule();
   }, [isOpen]);
 
   const handleAddSlot = async (e: React.FormEvent) => {
@@ -73,39 +78,17 @@ export default function ScheduleDrawer({
     const cleanTitle = title.trim();
     if (!cleanTitle || !time) return;
 
-    const newSlot: ScheduleSlot = {
-      id: `slot_${Date.now()}`,
-      time: time,
-      title: cleanTitle,
-      description: description.trim(),
-      notified: false,
-      type: type,
-    };
-
-    // Add and sort slots chronologically
-    const updated = [...schedule, newSlot].sort((a, b) =>
-      a.time.localeCompare(b.time),
-    );
-    setSchedule(updated);
-    await AppStorage.saveSchedule(updated);
+    await addSlot(time, cleanTitle, description, type);
 
     setTitle("");
     setTime("");
     setDescription("");
     setType("daily");
-
-    // Dispatch custom event to notify App.tsx that schedule updated
-    window.dispatchEvent(new CustomEvent("schedule-update"));
-  };
-
-  const handleDeleteSlot = async (id: string) => {
-    const updated = schedule.filter((s) => s.id !== id);
-    setSchedule(updated);
-    await AppStorage.saveSchedule(updated);
-    window.dispatchEvent(new CustomEvent("schedule-update"));
   };
 
   if (!isOpen) return null;
+
+  const totalSlotsCount = upcomingSlots.length + historySlots.length;
 
   return (
     <div className="fixed inset-0 z-50 flex justify-start pointer-events-none">
@@ -124,7 +107,7 @@ export default function ScheduleDrawer({
               Daily Schedule
             </h2>
             <p className="text-[10px] text-text-secondary">
-              Plan your slots & receive desktop notifications
+              Plan your slots & view completed history
             </p>
           </div>
           <button
@@ -149,7 +132,7 @@ export default function ScheduleDrawer({
           )}
 
           {/* Add Time Slot Form */}
-          <form onSubmit={handleAddSlot} className="space-y-2.5 ">
+          <form onSubmit={handleAddSlot} className="space-y-2.5">
             <div className="grid grid-cols-3 gap-2">
               <input
                 type="time"
@@ -180,7 +163,7 @@ export default function ScheduleDrawer({
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Topic description (optional)..."
               rows={2}
-              className="w-full p-2 rounded bg-surface border border-border text-xs text-text-primary focus:outline-none focus:border-accent "
+              className="w-full p-2 rounded bg-surface border border-border text-xs text-text-primary focus:outline-none focus:border-accent resize-none"
             />
             <button
               type="submit"
@@ -195,53 +178,176 @@ export default function ScheduleDrawer({
             <div className="text-center text-xs text-text-secondary py-8">
               Loading schedule...
             </div>
-          ) : schedule.length === 0 ? (
+          ) : totalSlotsCount === 0 ? (
             <div className="text-center text-xs text-text-secondary py-12 space-y-1 bg-surface-hover/10 rounded-lg p-4 border border-dashed border-border/40">
               <p className="font-semibold text-text-primary">
-                No slots added today
+                No slots scheduled
               </p>
               <p className="text-[10px]">
                 Divide your day into focus chunks to optimize tasks.
               </p>
             </div>
           ) : (
-            <div className="relative pl-4 border-l border-dashed border-border/60 ml-2.5 space-y-5">
-              {schedule.map((slot) => (
-                <div
-                  key={slot.id}
-                  className="relative group/slot flex items-start justify-between gap-3 text-shadow-none"
-                >
-                  {/* Timeline bullet dot */}
-                  <span className="absolute -left-[20px] top-[14px] w-2 h-2 rounded-full bg-accent ring-4 ring-bg border border-accent-soft-border shrink-0" />
+            <div className="space-y-6">
+              {/* UPCOMING SECTION */}
+              <div className="space-y-3">
+                <h3 className="text-[10px] uppercase tracking-wider font-bold text-accent">
+                  Upcoming ({upcomingSlots.length})
+                </h3>
 
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-1.5 text-accent flex-wrap">
-                      <Clock size={11} />
-                      <span className="text-[10px] font-bold tracking-tight">
-                        {format12Hour(slot.time)}
-                      </span>
-                      <span className="text-[8px] uppercase px-1 py-0.5 rounded bg-accent/10 border border-accent/25 font-bold tracking-wider text-accent shrink-0 select-none">
-                        {slot.type === "once" ? "Once" : "Daily"}
-                      </span>
-                    </div>
-                    <h4 className="text-xs font-bold text-text-primary mt-1 break-words">
-                      {slot.title}
-                    </h4>
-                    {slot.description && (
-                      <p className="text-[10px] text-text-secondary mt-0.5 leading-normal break-words">
-                        {slot.description}
-                      </p>
-                    )}
+                {upcomingSlots.length === 0 ? (
+                  <p className="text-[10px] text-text-tertiary italic">
+                    No upcoming slots for today.
+                  </p>
+                ) : (
+                  <div className="relative pl-4 border-l border-dashed border-border/60 ml-2.5 space-y-4">
+                    {upcomingSlots.map((slot) => (
+                      <div
+                        key={slot.id}
+                        className="relative group/slot flex items-start justify-between gap-3 text-shadow-none"
+                      >
+                        {/* Timeline bullet dot */}
+                        <span className="absolute -left-[20px] top-[14px] w-2 h-2 rounded-full bg-accent ring-4 ring-bg border border-accent-soft-border shrink-0" />
+
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-1.5 text-accent flex-wrap">
+                            <Clock size={11} />
+                            <span className="text-[10px] font-bold tracking-tight">
+                              {format12Hour(slot.time)}
+                            </span>
+                            <span className="text-[8px] uppercase px-1 py-0.5 rounded bg-accent/10 border border-accent/25 font-bold tracking-wider text-accent shrink-0 select-none">
+                              {slot.type === "once" ? "Once" : "Daily"}
+                            </span>
+                          </div>
+                          <h4 className="text-xs font-bold text-text-primary mt-1 break-words">
+                            {slot.title}
+                          </h4>
+                          {slot.description && (
+                            <p className="text-[10px] text-text-secondary mt-0.5 leading-normal break-words">
+                              {slot.description}
+                            </p>
+                          )}
+                        </div>
+
+                        {/* Actions: Complete (✓) and Cancel (×) */}
+                        <div className="flex items-center gap-1 shrink-0 mt-1">
+                          <button
+                            onClick={() => completeSlot(slot.id)}
+                            className="p-1 rounded text-text-secondary hover:text-accent hover:bg-surface-hover transition-colors cursor-pointer border-0 bg-transparent"
+                            title="Mark as completed"
+                          >
+                            <Check size={13} />
+                          </button>
+                          <button
+                            onClick={() => cancelSlot(slot.id)}
+                            className="p-1 rounded text-text-secondary hover:text-danger hover:bg-surface-hover transition-colors cursor-pointer border-0 bg-transparent"
+                            title="Cancel slot"
+                          >
+                            <X size={13} />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
                   </div>
+                )}
+              </div>
 
-                  <button
-                    onClick={() => handleDeleteSlot(slot.id)}
-                    className="text-text-secondary hover:text-danger transition-colors self-start mt-1 cursor-pointer border-0 bg-transparent p-0"
-                  >
-                    <Trash2 size={13} />
-                  </button>
+              {/* HISTORY SECTION */}
+              {historySlots.length > 0 && (
+                <div className="space-y-3 pt-3 border-t border-border/40">
+                  <h3 className="text-[10px] uppercase tracking-wider font-bold text-text-secondary">
+                    History ({historySlots.length})
+                  </h3>
+
+                  <div className="space-y-2">
+                    {historySlots.map((slot) => {
+                      const isCompleted = slot.status === "completed";
+                      const isMissed = slot.status === "missed";
+                      const isCancelled = slot.status === "cancelled";
+
+                      return (
+                        <div
+                          key={slot.id}
+                          className="p-2.5 rounded-lg bg-surface/30 border border-border/30 flex items-start justify-between gap-2.5 opacity-80 hover:opacity-100 transition-opacity"
+                        >
+                          <div className="flex items-start gap-2 min-w-0 flex-1">
+                            <div className="mt-0.5 shrink-0">
+                              {isCompleted && (
+                                <CheckCircle2
+                                  size={13}
+                                  className="text-accent fill-accent/10"
+                                />
+                              )}
+                              {isMissed && (
+                                <AlertCircle
+                                  size={13}
+                                  className="text-amber-400"
+                                />
+                              )}
+                              {isCancelled && (
+                                <XCircle
+                                  size={13}
+                                  className="text-text-tertiary"
+                                />
+                              )}
+                            </div>
+
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-1.5">
+                                <span className="text-[9px] font-bold text-text-tertiary">
+                                  {format12Hour(slot.time)}
+                                </span>
+                                <span
+                                  className={`text-[8px] uppercase px-1 py-0.2 rounded font-bold tracking-wider ${
+                                    isCompleted
+                                      ? "bg-accent/10 text-accent"
+                                      : isMissed
+                                        ? "bg-amber-400/10 text-amber-400"
+                                        : "bg-surface-hover text-text-tertiary"
+                                  }`}
+                                >
+                                  {slot.status}
+                                </span>
+                              </div>
+                              <h4
+                                className={`text-xs mt-0.5 break-words font-medium ${
+                                  isCancelled
+                                    ? "line-through text-text-tertiary"
+                                    : "text-text-secondary"
+                                }`}
+                              >
+                                {slot.title}
+                              </h4>
+                              {slot.description && (
+                                <p className="text-[9px] text-text-tertiary mt-0.5 leading-normal break-words line-clamp-1">
+                                  {slot.description}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-1 shrink-0 mt-0.5">
+                            <button
+                              onClick={() => restoreSlot(slot.id)}
+                              className="p-1 rounded text-text-tertiary hover:text-accent transition-colors border-0 bg-transparent cursor-pointer"
+                              title="Re-schedule slot"
+                            >
+                              <RotateCcw size={12} />
+                            </button>
+                            <button
+                              onClick={() => permanentlyDeleteSlot(slot.id)}
+                              className="p-1 rounded text-text-tertiary hover:text-danger transition-colors border-0 bg-transparent cursor-pointer"
+                              title="Delete record"
+                            >
+                              <Trash2 size={12} />
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
-              ))}
+              )}
             </div>
           )}
         </div>

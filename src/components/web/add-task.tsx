@@ -1,268 +1,50 @@
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 import { Input } from "../ui/input";
 import { useNavigation } from "../../context/navigation-context";
-import { AppStorage } from "../../lib/storage";
-import type { AppSettings } from "../../lib/storage";
-import { checkFocusAchievements, checkHistoryAchievements } from "../../lib/storage/achievements-helper";
+import { useCurrentSession } from "../../hooks/useCurrentSession";
+import { useSettings } from "../../hooks/useSettings";
+import { formatTime, formatDurationFriendly } from "../../utils/session-timing";
 
-declare const chrome: any;
-
-type FocusState = "idle" | "running" | "summary";
-
-export const formatTime = (totalSeconds: number) => {
-  const hrs = Math.floor(totalSeconds / 3600);
-  const mins = Math.floor((totalSeconds % 3600) / 60);
-  const secs = totalSeconds % 60;
-
-  return `${hrs.toString().padStart(2, "0")}:${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
-};
-
-export const formatDurationFriendly = (totalSeconds: number) => {
-  if (totalSeconds === 0) return "0s";
-  const hrs = Math.floor(totalSeconds / 3600);
-  const mins = Math.floor((totalSeconds % 3600) / 60);
-  const secs = totalSeconds % 60;
-
-  const parts = [];
-  if (hrs > 0) parts.push(`${hrs}h`);
-  if (mins > 0) parts.push(`${mins}m`);
-  if (secs > 0 || parts.length === 0) parts.push(`${secs}s`);
-  return parts.join(" ");
-};
+export { formatTime, formatDurationFriendly };
 
 export default function AddTask() {
   const navigation = useNavigation();
+  const { settings } = useSettings();
+  const {
+    focusState,
+    task,
+    isPaused,
+    seconds,
+    sessionStatus,
+    sessionAccomplishments,
+    isNoteSaved,
+    startSession,
+    pauseSession,
+    resumeSession,
+    endSession,
+    saveAccomplishment,
+    startAnother,
+  } = useCurrentSession();
 
-  const [focusState, setFocusState] = useState<FocusState>("idle");
-  const [seconds, setSeconds] = useState(0);
-  const [isPaused, setIsPaused] = useState(false);
-  const [startedAt, setStartedAt] = useState<number>(0);
-  const [task, setTask] = useState<string>("");
-  const [accomplishment, setAccomplishment] = useState<string>("");
-  const [sessionAccomplishments, setSessionAccomplishments] = useState<string[]>([]);
-  const [isNoteSaved, setIsNoteSaved] = useState(false);
-  const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
-  const [sessionStatus, setSessionStatus] = useState<"completed" | "stopped">("completed");
-  const [settings, setSettings] = useState<AppSettings>({
-    clockShowSeconds: true,
-    clock24Hour: false,
-    tabTitleTimer: true,
-    soundAlert: true,
-  });
+  const [inputTask, setInputTask] = useState("");
+  const [accomplishment, setAccomplishment] = useState("");
+
+  // Sync input task when task changes externally or session clears
+  useEffect(() => {
+    if (focusState === "idle") {
+      setInputTask("");
+    }
+  }, [focusState]);
 
   const handleTaskChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setTask(e.target.value);
-  };
-
-  useEffect(() => {
-    let interval: ReturnType<typeof setInterval> | null = null;
-
-    if (focusState === "running" && !isPaused) {
-      interval = setInterval(() => {
-        setSeconds((s) => s + 1);
-      }, 1000);
-    }
-
-    return () => {
-      if (interval) clearInterval(interval);
-    };
-  }, [focusState, isPaused]);
-
-  // Check storage for active running session on mount
-  useEffect(() => {
-    const checkActiveSession = async () => {
-      try {
-        const active = await AppStorage.getActiveSession();
-        if (active) {
-          setTask(active.task);
-          setFocusState(active.focusState);
-          setStartedAt(active.startedAt);
-          const activeIsPaused = !!active.isPaused;
-          const activeAccumulated = active.accumulatedSeconds || 0;
-          setIsPaused(activeIsPaused);
-
-          if (active.focusState === "running") {
-            if (activeIsPaused) {
-              setSeconds(activeAccumulated);
-            } else {
-              const elapsed = activeAccumulated + Math.floor((Date.now() - active.startedAt) / 1000);
-              setSeconds(elapsed);
-            }
-          } else if (active.focusState === "summary") {
-            const elapsed = activeAccumulated + Math.floor((Date.now() - active.startedAt) / 1000);
-            setSeconds(elapsed);
-            if (active.sessionStatus) setSessionStatus(active.sessionStatus);
-            if (active.currentSessionId) {
-              setCurrentSessionId(active.currentSessionId);
-              // Retrieve accomplishments from history
-              try {
-                const history = await AppStorage.getHistory();
-                const currentSession = history.find(s => s.id === active.currentSessionId);
-                if (currentSession) {
-                  const list = currentSession.accomplishments || (currentSession.accomplishment ? [currentSession.accomplishment] : []);
-                  setSessionAccomplishments(list);
-                }
-              } catch (err) {
-                console.error("Failed to load accomplishments from history on mount:", err);
-              }
-            }
-          }
-        }
-      } catch (e) {
-        console.error("Failed to load active session:", e);
-      }
-    };
-    checkActiveSession();
-  }, []);
-
-  // Load settings on mount
-  useEffect(() => {
-    const loadSettings = async () => {
-      try {
-        const saved = await AppStorage.getSettings();
-        setSettings(saved);
-      } catch (err) {
-        console.error("Failed to load settings:", err);
-      }
-    };
-    loadSettings();
-  }, []);
-
-  // Listen to state changes & settings changes from other open tabs
-  useEffect(() => {
-    const handleActiveSessionUpdate = (active: any) => {
-      if (!active) {
-        setSeconds(0);
-        setTask("");
-        setAccomplishment("");
-        setIsNoteSaved(false);
-        setCurrentSessionId(null);
-        setFocusState("idle");
-        setIsPaused(false);
-        setStartedAt(0);
-      } else if (active.focusState === "running") {
-        setTask(active.task);
-        setFocusState("running");
-        setStartedAt(active.startedAt);
-        const activeIsPaused = !!active.isPaused;
-        const activeAccumulated = active.accumulatedSeconds || 0;
-        setIsPaused(activeIsPaused);
-
-        if (activeIsPaused) {
-          setSeconds(activeAccumulated);
-        } else {
-          const elapsed = activeAccumulated + Math.floor((Date.now() - active.startedAt) / 1000);
-          setSeconds(elapsed);
-        }
-      } else if (active.focusState === "summary") {
-        setTask(active.task);
-        setFocusState("summary");
-        const activeAccumulated = active.accumulatedSeconds || 0;
-        const elapsed = activeAccumulated + Math.floor((Date.now() - active.startedAt) / 1000);
-        setSeconds(elapsed);
-        if (active.sessionStatus) setSessionStatus(active.sessionStatus);
-        if (active.currentSessionId) setCurrentSessionId(active.currentSessionId);
-      }
-    };
-
-    const handleStorageChange = (changes: any, areaName: string) => {
-      if (areaName === "local") {
-        if (changes.active_session) {
-          handleActiveSessionUpdate(changes.active_session.newValue);
-        }
-        if (changes.app_settings) {
-          setSettings(changes.app_settings.newValue);
-        }
-      }
-    };
-
-    const handleLocalUpdate = (e: Event) => {
-      const customEvent = e as CustomEvent;
-      if (customEvent.detail) {
-        if (customEvent.detail.key === "active_session") {
-          handleActiveSessionUpdate(customEvent.detail.newValue);
-        }
-        if (customEvent.detail.key === "app_settings") {
-          setSettings(customEvent.detail.newValue);
-        }
-      }
-    };
-
-    if (typeof chrome !== "undefined" && chrome.storage) {
-      chrome.storage.onChanged.addListener(handleStorageChange);
-      return () => chrome.storage.onChanged.removeListener(handleStorageChange);
-    } else {
-      window.addEventListener("local-storage-update", handleLocalUpdate);
-      return () => window.removeEventListener("local-storage-update", handleLocalUpdate);
-    }
-  }, []);
-
-  // Sync tab title with active running timer
-  useEffect(() => {
-    if (settings.tabTitleTimer && focusState === "running") {
-      document.title = `(${formatTime(seconds)}) continuo`;
-    } else {
-      document.title = "continuo";
-    }
-
-    return () => {
-      document.title = "continuo";
-    };
-  }, [seconds, focusState, settings.tabTitleTimer]);
-
-
-
-  const handleStartFocus = async () => {
-    const started = Date.now();
-    setFocusState("running");
-    setSeconds(0);
-    setIsPaused(false);
-    setStartedAt(started);
-
-    await AppStorage.setActiveSession({
-      task: task,
-      startedAt: started,
-      focusState: "running",
-      isPaused: false,
-      accumulatedSeconds: 0,
-    });
-  };
-
-  const handlePauseFocus = async () => {
-    if (focusState !== "running" || isPaused) return;
-
-    const currentTotal = seconds;
-
-    setIsPaused(true);
-
-    await AppStorage.setActiveSession({
-      task: task,
-      startedAt: startedAt,
-      focusState: "running",
-      isPaused: true,
-      accumulatedSeconds: currentTotal,
-    });
-  };
-
-  const handleResumeFocus = async () => {
-    if (focusState !== "running" || !isPaused) return;
-
-    const newStartedAt = Date.now();
-    setIsPaused(false);
-    setStartedAt(newStartedAt);
-
-    await AppStorage.setActiveSession({
-      task: task,
-      startedAt: newStartedAt,
-      focusState: "running",
-      isPaused: false,
-      accumulatedSeconds: seconds,
-    });
+    setInputTask(e.target.value);
   };
 
   const playAlertSound = () => {
     try {
-      const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+      if (!AudioCtx) return;
+      const ctx = new AudioCtx();
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
 
@@ -283,71 +65,24 @@ export default function AddTask() {
     }
   };
 
-  const handleEndSession = async (status: "completed" | "stopped") => {
-    setFocusState("summary");
-    setSessionStatus(status);
+  const handleStartFocus = async () => {
+    const clean = inputTask.trim();
+    if (!clean) return;
+    await startSession(clean);
+  };
 
-    const sessionId = `session_${Date.now()}`;
-    setCurrentSessionId(sessionId);
-
-    const sessionData = {
-      id: sessionId,
-      title: task,
-      startedAt: Date.now() - seconds * 1000,
-      endedAt: Date.now(),
-      status: status,
-      createdAt: Date.now(),
-    };
-
-    await AppStorage.saveSession(sessionData);
-
-    await AppStorage.setActiveSession({
-      task: task,
-      startedAt: Date.now() - seconds * 1000,
-      focusState: "summary",
-      sessionStatus: status,
-      currentSessionId: sessionId,
-      accumulatedSeconds: seconds,
-    });
-
+  const handleEndSessionClick = async (status: "completed" | "stopped") => {
+    await endSession(status);
     if (settings.soundAlert) {
       playAlertSound();
     }
-
-    await checkFocusAchievements();
   };
 
-  const handleSaveNote = async () => {
+  const handleSaveNoteClick = async () => {
     const cleanNote = accomplishment.trim();
-    if (!cleanNote || !currentSessionId) return;
-
-    await AppStorage.updateSessionAccomplishment(currentSessionId, cleanNote);
-    
-    // Add to the local display list
-    setSessionAccomplishments(prev => [...prev, cleanNote]);
+    if (!cleanNote) return;
+    await saveAccomplishment(cleanNote);
     setAccomplishment("");
-    setIsNoteSaved(true);
-    
-    // Reset saved status after a brief delay so the user can type and save more notes
-    setTimeout(() => {
-      setIsNoteSaved(false);
-    }, 1500);
-
-    await checkHistoryAchievements();
-  };
-
-  const handleStartAnother = async () => {
-    setSeconds(0);
-    setTask("");
-    setAccomplishment("");
-    setSessionAccomplishments([]);
-    setIsNoteSaved(false);
-    setCurrentSessionId(null);
-    setFocusState("idle");
-    setIsPaused(false);
-    setStartedAt(0);
-
-    await AppStorage.clearActiveSession();
   };
 
   return (
@@ -392,7 +127,7 @@ export default function AddTask() {
         <form
           onSubmit={(e) => {
             e.preventDefault();
-            if (task.trim()) {
+            if (inputTask.trim()) {
               handleStartFocus();
             }
           }}
@@ -403,7 +138,7 @@ export default function AddTask() {
             placeholder="Build something great"
             autoFocus
             onChange={handleTaskChange}
-            value={task}
+            value={inputTask}
           />
         </form>
       )}
@@ -436,10 +171,15 @@ export default function AddTask() {
             {/* Display list of accomplishments saved so far */}
             {sessionAccomplishments.length > 0 && (
               <div className="flex flex-col gap-1.5 mb-2.5 p-3 rounded-lg bg-surface/50 border border-border/40 max-h-[160px] overflow-y-auto">
-                <p className="text-[9px] uppercase font-bold tracking-wider text-text-tertiary">Logged Accomplishments:</p>
+                <p className="text-[9px] uppercase font-bold tracking-wider text-text-tertiary">
+                  Logged Accomplishments:
+                </p>
                 <div className="flex flex-col gap-1">
                   {sessionAccomplishments.map((note, idx) => (
-                    <div key={idx} className="text-xs text-text-primary leading-relaxed flex items-start gap-1.5">
+                    <div
+                      key={idx}
+                      className="text-xs text-text-primary leading-relaxed flex items-start gap-1.5"
+                    >
                       <span className="text-accent mt-1 shrink-0 select-none">•</span>
                       <span className="italic">“{note}”</span>
                     </div>
@@ -483,7 +223,6 @@ export default function AddTask() {
                 value={accomplishment}
                 onChange={(e) => {
                   setAccomplishment(e.target.value);
-                  setIsNoteSaved(false);
                 }}
               />
               <button
@@ -504,7 +243,7 @@ export default function AddTask() {
                       : "bg-accent text-accent-text! hover:bg-accent-hover active:scale-[0.97]"
                   }
                 `}
-                onClick={handleSaveNote}
+                onClick={handleSaveNoteClick}
                 disabled={isNoteSaved || !accomplishment.trim()}
               >
                 {isNoteSaved ? "Saved ✓" : "Save Note"}
@@ -545,7 +284,7 @@ export default function AddTask() {
                 focus-visible:ring-offset-bg
               "
               onClick={handleStartFocus}
-              disabled={!task.trim()}
+              disabled={!inputTask.trim()}
             >
               Start Focus
             </button>
@@ -573,7 +312,7 @@ export default function AddTask() {
                   active:scale-[0.98]
                   cursor-pointer
                 "
-                onClick={handleResumeFocus}
+                onClick={resumeSession}
               >
                 Resume
               </button>
@@ -597,7 +336,7 @@ export default function AddTask() {
                   active:scale-[0.98]
                   cursor-pointer
                 "
-                onClick={handlePauseFocus}
+                onClick={pauseSession}
               >
                 Pause
               </button>
@@ -641,7 +380,7 @@ export default function AddTask() {
                     cursor-pointer
                   `
               }
-              onClick={() => handleEndSession("completed")}
+              onClick={() => handleEndSessionClick("completed")}
             >
               Complete
             </button>
@@ -665,7 +404,7 @@ export default function AddTask() {
                 active:scale-[0.98]
                 cursor-pointer
               "
-              onClick={() => handleEndSession("stopped")}
+              onClick={() => handleEndSessionClick("stopped")}
             >
               Stop
             </button>
@@ -692,7 +431,7 @@ export default function AddTask() {
                 active:scale-[0.98]
                 cursor-pointer
               "
-              onClick={handleStartAnother}
+              onClick={startAnother}
             >
               Start another focus
             </button>

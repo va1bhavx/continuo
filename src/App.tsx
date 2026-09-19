@@ -16,12 +16,21 @@ import { useNavigation } from "./context/navigation-context";
 import { AppStorage } from "./lib/storage";
 import { syncAllAchievements } from "./lib/storage/achievements-helper";
 import TodoDrawer from "./components/web/todo-drawer";
+import TodoNotesWidget from "./components/web/todo-notes-widget";
 import ScheduleDrawer from "./components/web/schedule-drawer";
 import { ListTodo, CalendarClock } from "lucide-react";
 import { StorageService } from "./lib/storage/chrome-storage";
+import { useCurrentSession } from "./hooks/useCurrentSession";
+import { useSettings } from "./hooks/useSettings";
+import { useTodos } from "./hooks/useTodos";
+import { getTabTitle } from "./utils/session-timing";
 
 function App() {
   const navigation = useNavigation();
+  const { session, seconds } = useCurrentSession();
+  const { settings } = useSettings();
+  const { activeTodos, addTodo, completeTodo, deleteTodo } = useTodos();
+
   const [isScrolled, setIsScrolled] = useState(false);
   const [wallpaper, setWallpaper] = useState<string>(
     "/wall/severina-seidl-3zSazQQX4ik-unsplash.webp",
@@ -34,6 +43,21 @@ function App() {
   const [scheduleOpen, setScheduleOpen] = useState(false);
   const [scheduleSlots, setScheduleSlots] = useState<any[]>([]);
 
+  // Centralized Tab Title Management
+  useEffect(() => {
+    document.title = getTabTitle({
+      session,
+      seconds,
+      showSessionName: settings.showSessionNameInTitle,
+      showSessionTimer: settings.showSessionTimerInTitle,
+    });
+  }, [
+    session,
+    seconds,
+    settings.showSessionNameInTitle,
+    settings.showSessionTimerInTitle,
+  ]);
+
   const loadSchedule = async () => {
     try {
       const saved = await AppStorage.getSchedule();
@@ -44,10 +68,16 @@ function App() {
       );
 
       if (lastDate !== todayStr) {
-        // Filter out completed one-time slots, and reset notified status for daily ones
-        const updatedSlots = saved
-          .filter((slot) => !(slot.type === "once" && slot.notified))
-          .map((slot) => ({ ...slot, notified: false }));
+        // Preserve completed one-time slots in history, and reset notified status for daily ones
+        const updatedSlots = saved.map((slot) => {
+          if (slot.type === "once" && slot.notified && slot.status === "scheduled") {
+            return { ...slot, status: "completed" as const, completedAt: Date.now() };
+          }
+          if (slot.type === "daily") {
+            return { ...slot, notified: false };
+          }
+          return slot;
+        });
         setScheduleSlots(updatedSlots);
         await AppStorage.saveSchedule(updatedSlots);
         await StorageService.set("last_notified_date", todayStr);
@@ -90,7 +120,7 @@ function App() {
       setWallpaper(saved);
       setBgWallpaper(saved);
       loadSchedule();
-      // Wait a brief moment to silently sync all achievements based on existing data on load
+      // Silently sync all achievements based on existing data on load
       setTimeout(async () => {
         await syncAllAchievements(true);
       }, 1000);
@@ -144,8 +174,8 @@ function App() {
 
       for (let i = 0; i < updatedSlots.length; i++) {
         const slot = updatedSlots[i];
-        if (slot.time === currentTimeStr && !slot.notified) {
-          // Trigger notification (prioritize Chrome Extension Notifications API if available)
+        if (slot.time === currentTimeStr && !slot.notified && slot.status === "scheduled") {
+          // Trigger notification
           if (
             typeof chrome !== "undefined" &&
             chrome.notifications &&
@@ -175,8 +205,15 @@ function App() {
               console.warn("Standard notification trigger failed:", e);
             }
           }
-          // Mark notified
-          updatedSlots[i] = { ...slot, notified: true };
+
+          // Mark notified and if one-time, mark completed into history
+          const nextStatus = slot.type === "once" ? "completed" : slot.status;
+          updatedSlots[i] = {
+            ...slot,
+            notified: true,
+            status: nextStatus,
+            completedAt: Date.now(),
+          };
           updatedNeeded = true;
         }
       }
@@ -187,7 +224,6 @@ function App() {
       }
     };
 
-    // Run check immediately and then every 20 seconds
     checkScheduleAlarms();
     const interval = setInterval(checkScheduleAlarms, 20000);
 
@@ -251,7 +287,7 @@ function App() {
       const timer = setTimeout(() => {
         setBgWallpaper(wallpaper);
         setTransitioning(false);
-      }, 1050); // 1.05s covers all delays and transition durations
+      }, 1050);
       return () => clearTimeout(timer);
     }
   }, [wallpaper, bgWallpaper]);
@@ -289,6 +325,7 @@ function App() {
           </div>
         )}
       </div>
+
       <header
         className={`flex w-full items-center justify-between px-4 py-4 shrink-0 sticky top-0 transition-all duration-200 z-50 ${
           isScrolled ? "bg-surface/95  shadow-sm" : "bg-transparent"
@@ -373,6 +410,17 @@ function App() {
         </a>
       </footer>
 
+      {/* Bottom-Left Ambient Todo Notes Widget */}
+      {navigation.view === "main" && (
+        <TodoNotesWidget
+          activeTodos={activeTodos}
+          onCompleteTodo={completeTodo}
+          onDeleteTodo={deleteTodo}
+          onAddTodo={addTodo}
+          onOpenFullDrawer={() => setTodoOpen(true)}
+        />
+      )}
+
       {/* Bottom-Left Quick Drawers Toolbar */}
       {navigation.view === "main" && (
         <div className="fixed bottom-4 left-4 z-40 flex items-center gap-1.5 bg-surface/15 backdrop-blur-xs border border-border/20 rounded-full px-2 py-1 shadow-sm text-shadow-legible transition-colors hover:bg-surface/20">
@@ -383,6 +431,11 @@ function App() {
           >
             <ListTodo size={12} />
             <span>Todo</span>
+            {activeTodos.length > 0 && (
+              <span className="ml-0.5 px-1.5 py-0.2 rounded-full bg-accent/20 text-accent font-bold text-[9px] border border-accent/30">
+                {activeTodos.length}
+              </span>
+            )}
           </button>
           <span className="h-3 w-px bg-border/30" />
           <button

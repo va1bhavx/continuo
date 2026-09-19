@@ -1,9 +1,9 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { ChevronLeft, Plus, Trash2, Globe, Pencil, Check, X, GripVertical } from "lucide-react";
 import { useNavigation } from "../../context/navigation-context";
-import { AppStorage } from "../../lib/storage";
 import type { FavoriteLink } from "../../lib/storage";
-import { checkLinksAchievements, checkAndUnlock } from "../../lib/storage/achievements-helper";
+import { useQuickLinks } from "../../hooks/useQuickLinks";
+import { resolveQuickLinkAvatar } from "../../utils/quick-link-icons";
 import {
   DndContext,
   closestCenter,
@@ -82,7 +82,7 @@ function SortableLinkItem({
   };
 
   const avatarColorClass = getAvatarColor(link.label);
-  const initials = getInitials(link.label);
+  const avatar = resolveQuickLinkAvatar(link.label, link.url);
 
   return (
     <div
@@ -144,7 +144,11 @@ function SortableLinkItem({
 
             {/* Dynamic Avatar */}
             <span className={`flex size-9 shrink-0 items-center justify-center rounded-full border text-xs font-semibold ${avatarColorClass}`}>
-              {initials}
+              {avatar.type === "icon" && avatar.renderIcon ? (
+                avatar.renderIcon({ size: 16 })
+              ) : (
+                avatar.initials
+              )}
             </span>
             
             <div className="flex flex-col text-left min-w-0 flex-1">
@@ -188,9 +192,14 @@ function SortableLinkItem({
 
 export default function ManageLinks() {
   const navigation = useNavigation();
-
-  const [links, setLinks] = useState<FavoriteLink[]>([]);
-  const [loading, setLoading] = useState(true);
+  const {
+    links,
+    loading,
+    addLink,
+    updateLink,
+    deleteLink,
+    reorderLinks,
+  } = useQuickLinks();
 
   // Form states
   const [label, setLabel] = useState("");
@@ -206,7 +215,7 @@ export default function ManageLinks() {
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
-        distance: 5, // Requires 5px of drag distance to activate, allowing click events on delete/edit buttons
+        distance: 5,
       },
     }),
     useSensor(KeyboardSensor, {
@@ -253,31 +262,12 @@ export default function ManageLinks() {
       return;
     }
 
-    const updated = links.map((l) =>
-      l.id === id ? { ...l, label: cleanLabel, url: cleanUrl } : l
-    );
-    setLinks(updated);
-    await AppStorage.saveLinks(updated);
+    await updateLink(id, cleanLabel, cleanUrl);
 
     setEditingLinkId(null);
     setEditLabel("");
     setEditUrl("");
-    await checkAndUnlock("renovator");
   };
-
-  useEffect(() => {
-    const loadLinks = async () => {
-      try {
-        const saved = await AppStorage.getLinks();
-        setLinks(saved);
-      } catch (err) {
-        console.error("Failed to load links:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    loadLinks();
-  }, []);
 
   const handleAddLink = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -306,27 +296,10 @@ export default function ManageLinks() {
       return;
     }
 
-    const newLink: FavoriteLink = {
-      id: `link_${Date.now()}`,
-      label: cleanLabel,
-      url: cleanUrl,
-    };
-
-    const updated = [...links, newLink];
-    setLinks(updated);
-    await AppStorage.saveLinks(updated);
+    await addLink(cleanLabel, cleanUrl);
 
     setLabel("");
     setUrl("");
-    await checkLinksAchievements();
-  };
-
-  const handleDeleteLink = async (id: string) => {
-    const updated = links.filter((l) => l.id !== id);
-    setLinks(updated);
-    await AppStorage.saveLinks(updated);
-    await checkAndUnlock("spring_cleaning");
-    await checkLinksAchievements();
   };
 
   const handleDragEnd = async (event: any) => {
@@ -337,9 +310,7 @@ export default function ManageLinks() {
     const newIndex = links.findIndex((l) => l.id === over.id);
 
     const updated = arrayMove(links, oldIndex, newIndex);
-    setLinks(updated);
-    await AppStorage.saveLinks(updated);
-    await checkAndUnlock("organizer");
+    await reorderLinks(updated);
   };
 
   if (loading) {
@@ -349,6 +320,9 @@ export default function ManageLinks() {
       </div>
     );
   }
+
+  // Preview avatar for current form inputs
+  const previewAvatar = resolveQuickLinkAvatar(label, url);
 
   return (
     <div className="flex flex-col gap-8 px-4 py-8 max-w-2xl mx-auto animate-fade-in text-left">
@@ -370,7 +344,26 @@ export default function ManageLinks() {
       <div className="grid grid-cols-1 md:grid-cols-1 gap-6">
         {/* Add Link Form */}
         <form onSubmit={handleAddLink} className="flex flex-col gap-4 p-5 rounded-lg bg-surface/70 backdrop-blur-md border border-border-strong/20">
-          <h2 className="text-sm font-semibold text-text-primary">Add New Shortcut</h2>
+          <div className="flex items-center justify-between">
+            <h2 className="text-sm font-semibold text-text-primary">Add New Shortcut</h2>
+            {(label || url) && (
+              <div className="flex items-center gap-2 text-xs text-text-secondary">
+                <span className="text-[10px]">Preview:</span>
+                <span className={`flex size-6 shrink-0 items-center justify-center rounded-full border text-[10px] font-semibold ${getAvatarColor(label)}`}>
+                  {previewAvatar.type === "icon" && previewAvatar.renderIcon ? (
+                    previewAvatar.renderIcon({ size: 12 })
+                  ) : (
+                    previewAvatar.initials
+                  )}
+                </span>
+                {previewAvatar.type === "icon" && (
+                  <span className="text-[9px] text-accent font-semibold px-1 rounded bg-accent/10 border border-accent/20">
+                    {previewAvatar.iconName}
+                  </span>
+                )}
+              </div>
+            )}
+          </div>
           
           <div className="flex flex-col sm:flex-row gap-3">
             <div className="flex-1">
@@ -436,7 +429,7 @@ export default function ManageLinks() {
                       handleSaveEdit={handleSaveEdit}
                       handleCancelEdit={handleCancelEdit}
                       handleStartEdit={handleStartEdit}
-                      handleDeleteLink={handleDeleteLink}
+                      handleDeleteLink={deleteLink}
                     />
                   ))}
                 </div>

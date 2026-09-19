@@ -14,9 +14,54 @@ interface ChangelogVersion {
 
 const CHANGELOG_DATA: ChangelogVersion[] = [
   {
+    version: "v1.3.0",
+    date: "September 18, 2026",
+    badge: "Latest Release",
+    type: "minor",
+    changes: [
+      {
+        category: "Ambient Focus Tasks Note Widget",
+        items: [
+          "Introduced a sleek, ambient notes card widget docked right above the bottom-left toolbar on the primary dashboard.",
+          "Widget appears automatically whenever active tasks exist and disappears seamlessly once all active tasks are completed or cleared.",
+          "Added instant-feedback check buttons with smooth completion transitions, quick inline task creation, and a direct drawer expansion shortcut.",
+          "Configured the bottom toolbar 'Todo' button to directly open the full Tasks Drawer.",
+        ],
+      },
+      {
+        category: "Famous Quick Link Icons",
+        items: [
+          "Expanded the quick links icon registry with crisp, high-fidelity SVG brand marks for major web platforms: Facebook, Instagram, WhatsApp, Telegram, TikTok, Netflix, Amazon, Spotify, Twitch, Google, Gmail, Wikipedia, Dropbox, Zoom, Discord, Notion, Figma, Slack, Bluesky, Vercel, ChatGPT, Stack Overflow, Canva, Quora, LeetCode, and more.",
+          "Subdomains and localized TLDs (e.g. m.youtube.com, web.whatsapp.com, amazon.in, fb.com) now match their respective brand icons automatically.",
+        ],
+      },
+      {
+        category: "Focus Session Timing Precision",
+        items: [
+          "Resolved the duration discrepancy between active stopwatch timers on the dashboard and saved records in Session History.",
+          "Active timers now compute strictly from canonical session timestamps, eliminating timer drift and multi-tab background pollution.",
+          "Completed sessions in History lock static duration directly from actual start and end timestamps.",
+        ],
+      },
+      {
+        category: "Browser Tab Title Customization",
+        items: [
+          "Added Settings toggles to show or hide active session names and live countdown/stopwatch timers directly in the Chrome tab title.",
+          "Supports 4 dynamic title formats while keeping Continuo branding clean and legible.",
+        ],
+      },
+      {
+        category: "Task & Schedule History Persistence",
+        items: [
+          "Tasks and Schedule items now preserve history across active, completed, and trash/missed states rather than being immediately deleted.",
+          "Added Active, Completed, and Trash filter views in the Todo drawer with restore and permanent delete actions.",
+        ],
+      },
+    ],
+  },
+  {
     version: "v1.2.1",
     date: "August 31, 2026",
-    badge: "Latest Release",
     type: "patch",
     changes: [
       {

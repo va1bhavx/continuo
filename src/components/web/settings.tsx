@@ -2,8 +2,8 @@ import { useEffect, useState } from "react";
 import { ChevronLeft, Trash2, RotateCcw } from "lucide-react";
 import { useNavigation } from "../../context/navigation-context";
 import { AppStorage } from "../../lib/storage";
-import type { AppSettings } from "../../lib/storage";
 import { checkCustomizationAchievements, checkAndUnlock } from "../../lib/storage/achievements-helper";
+import { useSettings } from "../../hooks/useSettings";
 
 const WALLPAPERS = [
   {
@@ -34,17 +34,11 @@ const WALLPAPERS = [
 
 export default function Settings() {
   const navigation = useNavigation();
-
-  const [settings, setSettings] = useState<AppSettings>({
-    clockShowSeconds: true,
-    clock24Hour: false,
-    tabTitleTimer: true,
-    soundAlert: true,
-  });
+  const { settings, updateSetting, resetSettings, loading: settingsLoading } = useSettings();
 
   const [selectedWallpaper, setSelectedWallpaper] = useState<string>("");
   const [customWallpaperUrl, setCustomWallpaperUrl] = useState<string>("");
-  const [loading, setLoading] = useState(true);
+  const [wallpaperLoading, setWallpaperLoading] = useState(true);
 
   // Toast and Modal states
   const [toast, setToast] = useState<string | null>(null);
@@ -56,13 +50,9 @@ export default function Settings() {
   } | null>(null);
 
   useEffect(() => {
-    const loadData = async () => {
+    const loadWallpaper = async () => {
       try {
-        const [savedSettings, savedWallpaper] = await Promise.all([
-          AppStorage.getSettings(),
-          AppStorage.getWallpaper(),
-        ]);
-        setSettings(savedSettings);
+        const savedWallpaper = await AppStorage.getWallpaper();
         setSelectedWallpaper(savedWallpaper);
 
         const isPreset = WALLPAPERS.some((w) => w.path === savedWallpaper);
@@ -70,20 +60,13 @@ export default function Settings() {
           setCustomWallpaperUrl(savedWallpaper);
         }
       } catch (err) {
-        console.error("Failed to load settings:", err);
+        console.error("Failed to load wallpaper:", err);
       } finally {
-        setLoading(false);
+        setWallpaperLoading(false);
       }
     };
-    loadData();
+    loadWallpaper();
   }, []);
-
-  const updateSetting = async (key: keyof AppSettings, value: boolean) => {
-    const updated = { ...settings, [key]: value };
-    setSettings(updated);
-    await AppStorage.saveSettings(updated);
-    await checkCustomizationAchievements();
-  };
 
   const handleWallpaperChange = async (path: string) => {
     setSelectedWallpaper(path);
@@ -130,14 +113,7 @@ export default function Settings() {
       message:
         "Are you sure you want to restore all settings and backgrounds to their defaults?",
       action: async () => {
-        const defaults: AppSettings = {
-          clockShowSeconds: true,
-          clock24Hour: false,
-          tabTitleTimer: true,
-          soundAlert: true,
-        };
-        setSettings(defaults);
-        await AppStorage.saveSettings(defaults);
+        await resetSettings();
 
         const defaultWall = "/wall/severina-seidl-3zSazQQX4ik-unsplash.webp";
         setSelectedWallpaper(defaultWall);
@@ -146,12 +122,11 @@ export default function Settings() {
         setModal(null);
         showToast("Settings reset to default");
         await checkAndUnlock("tabula_rasa");
-        await checkCustomizationAchievements();
       },
     });
   };
 
-  if (loading) {
+  if (settingsLoading || wallpaperLoading) {
     return (
       <div className="flex justify-center items-center h-64 text-text-secondary text-sm font-medium">
         Loading settings...
@@ -277,10 +252,16 @@ export default function Settings() {
               onChange={(val) => updateSetting("clock24Hour", val)}
             />
             <ToggleSwitch
-              label="Show timer in tab title"
-              description="Keep track of your active focus session ticking directly in the browser tab name."
-              checked={settings.tabTitleTimer}
-              onChange={(val) => updateSetting("tabTitleTimer", val)}
+              label="Show session name in tab title"
+              description="Display the name of your active focus session in the browser tab name."
+              checked={settings.showSessionNameInTitle}
+              onChange={(val) => updateSetting("showSessionNameInTitle", val)}
+            />
+            <ToggleSwitch
+              label="Show session timer in tab title"
+              description="Display the elapsed timer of your active focus session in the browser tab name."
+              checked={settings.showSessionTimerInTitle}
+              onChange={(val) => updateSetting("showSessionTimerInTitle", val)}
             />
             <ToggleSwitch
               label="Play completed alert sound"

@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
-import { X, CheckCircle2, Circle, Trash2, Link } from "lucide-react";
+import { X, CheckCircle2, Circle, Trash2, Link, RotateCcw } from "lucide-react";
 import { AppStorage } from "../../lib/storage";
-import type { TodoItem } from "../../lib/storage";
 import type { FocusSession } from "../../lib/data/mock-data";
+import { useTodos } from "../../hooks/useTodos";
 
 interface TodoDrawerProps {
   isOpen: boolean;
@@ -10,32 +10,36 @@ interface TodoDrawerProps {
 }
 
 export default function TodoDrawer({ isOpen, onClose }: TodoDrawerProps) {
-  const [todos, setTodos] = useState<TodoItem[]>([]);
+  const {
+    activeTodos,
+    completedTodos,
+    deletedTodos,
+    loading,
+    addTodo,
+    toggleTodo,
+    deleteTodo,
+    restoreTodo,
+    permanentlyDeleteTodo,
+  } = useTodos();
+
   const [history, setHistory] = useState<FocusSession[]>([]);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [linkedSessionId, setLinkedSessionId] = useState("");
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!isOpen) return;
 
-    const loadData = async () => {
+    const loadHistoryData = async () => {
       try {
-        const [savedTodos, savedHistory] = await Promise.all([
-          AppStorage.getTodos(),
-          AppStorage.getHistory(),
-        ]);
-        setTodos(savedTodos);
+        const savedHistory = await AppStorage.getHistory();
         setHistory(savedHistory);
       } catch (e) {
-        console.error("Failed to load Todo drawer data:", e);
-      } finally {
-        setLoading(false);
+        console.error("Failed to load history in Todo drawer:", e);
       }
     };
 
-    loadData();
+    loadHistoryData();
   }, [isOpen]);
 
   const handleAddTodo = async (e: React.FormEvent) => {
@@ -43,42 +47,17 @@ export default function TodoDrawer({ isOpen, onClose }: TodoDrawerProps) {
     const cleanTitle = title.trim();
     if (!cleanTitle) return;
 
-    const newItem: TodoItem = {
-      id: `todo_${Date.now()}`,
-      title: cleanTitle,
-      description: description.trim(),
-      completed: false,
-      linkedSessionId: linkedSessionId || undefined,
-      createdAt: Date.now(),
-    };
-
-    const updated = [newItem, ...todos];
-    setTodos(updated);
-    await AppStorage.saveTodos(updated);
+    await addTodo(cleanTitle, description, linkedSessionId || undefined);
 
     setTitle("");
     setDescription("");
     setLinkedSessionId("");
   };
 
-  const handleToggleTodo = async (id: string) => {
-    const updated = todos.map((t) =>
-      t.id === id ? { ...t, completed: !t.completed } : t,
-    );
-    setTodos(updated);
-    await AppStorage.saveTodos(updated);
-  };
-
-  const handleDeleteTodo = async (id: string) => {
-    const updated = todos.filter((t) => t.id !== id);
-    setTodos(updated);
-    await AppStorage.saveTodos(updated);
-  };
-
   if (!isOpen) return null;
 
-  const activeTodos = todos.filter((t) => !t.completed);
-  const completedTodos = todos.filter((t) => t.completed);
+  const totalTodosCount =
+    activeTodos.length + completedTodos.length + deletedTodos.length;
 
   return (
     <div className="fixed inset-0 z-50 flex justify-start pointer-events-none">
@@ -163,7 +142,7 @@ export default function TodoDrawer({ isOpen, onClose }: TodoDrawerProps) {
             <div className="text-center text-xs text-text-secondary py-8">
               Loading tasks...
             </div>
-          ) : todos.length === 0 ? (
+          ) : totalTodosCount === 0 ? (
             <div className="text-center text-xs text-text-secondary py-12 space-y-1 bg-surface-hover/10 rounded-lg p-4 border border-dashed border-border/40">
               <p className="font-semibold text-text-primary">No tasks found</p>
               <p className="text-[10px]">
@@ -172,7 +151,7 @@ export default function TodoDrawer({ isOpen, onClose }: TodoDrawerProps) {
             </div>
           ) : (
             <div className="space-y-4">
-              {/* Uncompleted Tasks */}
+              {/* Active Tasks */}
               {activeTodos.length > 0 && (
                 <div className="space-y-2">
                   <h3 className="text-[10px] uppercase tracking-wider font-bold text-accent">
@@ -189,8 +168,9 @@ export default function TodoDrawer({ isOpen, onClose }: TodoDrawerProps) {
                           className="p-3 rounded-lg bg-surface/50 border border-border/40 hover:border-border-strong/40 transition-all flex items-start gap-2.5"
                         >
                           <button
-                            onClick={() => handleToggleTodo(todo.id)}
+                            onClick={() => toggleTodo(todo.id)}
                             className="text-text-secondary hover:text-accent transition-colors self-start mt-0.5 border-0 bg-transparent cursor-pointer p-0"
+                            title="Mark complete"
                           >
                             <Circle size={15} />
                           </button>
@@ -213,8 +193,9 @@ export default function TodoDrawer({ isOpen, onClose }: TodoDrawerProps) {
                             )}
                           </div>
                           <button
-                            onClick={() => handleDeleteTodo(todo.id)}
+                            onClick={() => deleteTodo(todo.id)}
                             className="text-text-secondary hover:text-danger transition-colors self-start border-0 bg-transparent cursor-pointer p-0"
+                            title="Delete task"
                           >
                             <Trash2 size={13} />
                           </button>
@@ -225,13 +206,13 @@ export default function TodoDrawer({ isOpen, onClose }: TodoDrawerProps) {
                 </div>
               )}
 
-              {/* Completed Tasks */}
+              {/* Completed Tasks History */}
               {completedTodos.length > 0 && (
                 <div className="space-y-2">
                   <h3 className="text-[10px] uppercase tracking-wider font-bold text-text-secondary">
                     Completed ({completedTodos.length})
                   </h3>
-                  <div className="space-y-2 opacity-60">
+                  <div className="space-y-2 opacity-75">
                     {completedTodos.map((todo) => {
                       const linkedSession = history.find(
                         (s) => s.id === todo.linkedSessionId,
@@ -242,8 +223,9 @@ export default function TodoDrawer({ isOpen, onClose }: TodoDrawerProps) {
                           className="p-3 rounded-lg bg-surface/30 border border-border/30 flex items-start gap-2.5"
                         >
                           <button
-                            onClick={() => handleToggleTodo(todo.id)}
+                            onClick={() => toggleTodo(todo.id)}
                             className="text-accent hover:text-text-secondary transition-colors self-start mt-0.5 border-0 bg-transparent cursor-pointer p-0"
+                            title="Mark as active"
                           >
                             <CheckCircle2
                               size={15}
@@ -269,14 +251,57 @@ export default function TodoDrawer({ isOpen, onClose }: TodoDrawerProps) {
                             )}
                           </div>
                           <button
-                            onClick={() => handleDeleteTodo(todo.id)}
+                            onClick={() => deleteTodo(todo.id)}
                             className="text-text-secondary hover:text-danger transition-colors self-start border-0 bg-transparent cursor-pointer p-0"
+                            title="Delete task"
                           >
                             <Trash2 size={13} />
                           </button>
                         </div>
                       );
                     })}
+                  </div>
+                </div>
+              )}
+
+              {/* Deleted Tasks History */}
+              {deletedTodos.length > 0 && (
+                <div className="space-y-2">
+                  <h3 className="text-[10px] uppercase tracking-wider font-bold text-text-tertiary">
+                    Deleted ({deletedTodos.length})
+                  </h3>
+                  <div className="space-y-2 opacity-60">
+                    {deletedTodos.map((todo) => (
+                      <div
+                        key={todo.id}
+                        className="p-2.5 rounded-lg bg-surface/20 border border-border/20 flex items-center justify-between gap-2 text-xs text-text-tertiary"
+                      >
+                        <div className="flex items-center gap-2 min-w-0 flex-1">
+                          <span className="text-[11px] select-none text-danger/70 font-mono">
+                            ×
+                          </span>
+                          <span className="truncate italic line-through">
+                            {todo.title}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <button
+                            onClick={() => restoreTodo(todo.id)}
+                            className="p-1 rounded text-text-secondary hover:text-accent transition-colors border-0 bg-transparent cursor-pointer"
+                            title="Restore task"
+                          >
+                            <RotateCcw size={12} />
+                          </button>
+                          <button
+                            onClick={() => permanentlyDeleteTodo(todo.id)}
+                            className="p-1 rounded text-text-secondary hover:text-danger transition-colors border-0 bg-transparent cursor-pointer"
+                            title="Permanently remove"
+                          >
+                            <Trash2 size={12} />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
               )}
